@@ -1,0 +1,303 @@
+import React, { useState, useEffect, useCallback } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import api from '../../api/apiService'
+import PreflightResults from '../../components/PreflightResults'
+import {
+    Box, Typography, Button, Card, CardContent, Grid, Chip, Stack,
+    TextField, Alert, CircularProgress, Divider, IconButton,
+    Dialog, DialogTitle, DialogContent, DialogActions, Select, MenuItem,
+    FormControl, InputLabel, Paper, LinearProgress, Tooltip, Snackbar
+} from '@mui/material'
+import {
+    ArrowBack, Upload, Search, Delete, Comment, Send, Description,
+    CheckCircle, Warning, Error as ErrorIcon, Schedule
+} from '@mui/icons-material'
+
+const statusColors = {
+    pending: 'default', reviewing: 'info', approved: 'success', rejected: 'error', completed: 'primary'
+}
+const statusLabels = {
+    pending: 'Pendiente', reviewing: 'En revisión', approved: 'Aprobado', rejected: 'Rechazado', completed: 'Completado'
+}
+const preflightStatusIcons = {
+    PASS: <CheckCircle sx={{ color: '#10b981' }} />,
+    WARN: <Warning sx={{ color: '#f59e0b' }} />,
+    FAIL: <ErrorIcon sx={{ color: '#ef4444' }} />,
+    pending: <Schedule sx={{ color: '#9ca3af' }} />,
+}
+
+const AdminProjectDetail = () => {
+    const { projectId } = useParams()
+    const navigate = useNavigate()
+    const [project, setProject] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [uploading, setUploading] = useState(false)
+    const [preflightLoading, setPreflightLoading] = useState('')
+    const [selectedPdf, setSelectedPdf] = useState(null)
+    const [statusDialog, setStatusDialog] = useState(false)
+    const [newStatus, setNewStatus] = useState('')
+    const [comment, setComment] = useState('')
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+
+    const loadProject = useCallback(async () => {
+        try {
+            const res = await api.get(`/projects/${projectId}`)
+            setProject(res.data)
+        } catch (err) {
+            setSnackbar({ open: true, message: 'Error cargando proyecto', severity: 'error' })
+        } finally {
+            setLoading(false)
+        }
+    }, [projectId])
+
+    useEffect(() => { loadProject() }, [loadProject])
+
+    const handleUpload = async (event) => {
+        const files = event.target.files
+        if (!files.length) return
+
+        setUploading(true)
+        try {
+            for (const file of files) {
+                const formData = new FormData()
+                formData.append('file', file)
+                await api.post(`/projects/${projectId}/upload`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                })
+            }
+            setSnackbar({ open: true, message: `${files.length} PDF(s) subido(s)`, severity: 'success' })
+            loadProject()
+        } catch (err) {
+            setSnackbar({ open: true, message: err.response?.data?.detail || 'Error subiendo', severity: 'error' })
+        } finally {
+            setUploading(false)
+        }
+    }
+
+    const handlePreflight = async (filename) => {
+        setPreflightLoading(filename)
+        try {
+            await api.post(`/projects/${projectId}/preflight/${filename}`)
+            setSnackbar({ open: true, message: 'Preflight completado', severity: 'success' })
+            loadProject()
+        } catch (err) {
+            setSnackbar({ open: true, message: 'Error en preflight', severity: 'error' })
+        } finally {
+            setPreflightLoading('')
+        }
+    }
+
+    const handleDeletePdf = async (filename) => {
+        try {
+            await api.delete(`/projects/${projectId}/pdfs/${filename}`)
+            setSnackbar({ open: true, message: 'PDF eliminado', severity: 'success' })
+            if (selectedPdf?.filename === filename) setSelectedPdf(null)
+            loadProject()
+        } catch (err) {
+            setSnackbar({ open: true, message: 'Error eliminando', severity: 'error' })
+        }
+    }
+
+    const handleStatusChange = async () => {
+        try {
+            await api.put(`/projects/${projectId}/status`, { status: newStatus })
+            setStatusDialog(false)
+            setSnackbar({ open: true, message: 'Estado actualizado', severity: 'success' })
+            loadProject()
+        } catch (err) {
+            setSnackbar({ open: true, message: 'Error', severity: 'error' })
+        }
+    }
+
+    const handleAddComment = async () => {
+        if (!comment.trim()) return
+        try {
+            await api.post(`/projects/${projectId}/comments`, {
+                message: comment,
+                pdf_filename: selectedPdf?.filename || null
+            })
+            setComment('')
+            setSnackbar({ open: true, message: 'Comentario añadido', severity: 'success' })
+            loadProject()
+        } catch (err) {
+            setSnackbar({ open: true, message: 'Error', severity: 'error' })
+        }
+    }
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>
+        )
+    }
+
+    if (!project) {
+        return (
+            <Box sx={{ p: 3 }}>
+                <Alert severity="error">Proyecto no encontrado</Alert>
+                <Button sx={{ mt: 2 }} onClick={() => navigate('/admin')}>Volver</Button>
+            </Box>
+        )
+    }
+
+    return (
+        <Box sx={{ minHeight: '100vh', backgroundColor: '#f0f2f5', p: 3 }}>
+            <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+                {/* Header */}
+                <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+                    <IconButton onClick={() => navigate('/admin')}><ArrowBack /></IconButton>
+                    <Box sx={{ flex: 1 }}>
+                        <Typography variant="h5" sx={{ fontWeight: 700 }}>{project.name}</Typography>
+                        <Typography variant="body2" color="text.secondary">{project.description}</Typography>
+                    </Box>
+                    <Chip
+                        label={statusLabels[project.status] || project.status}
+                        color={statusColors[project.status] || 'default'}
+                        onClick={() => { setNewStatus(project.status); setStatusDialog(true) }}
+                        sx={{ cursor: 'pointer', fontWeight: 600 }}
+                    />
+                </Stack>
+
+                <Grid container spacing={3}>
+                    {/* Left: PDFs */}
+                    <Grid item xs={12} md={7}>
+                        <Card>
+                            <CardContent>
+                                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>PDFs</Typography>
+                                    <Stack direction="row" spacing={1}>
+                                        <Button variant="contained" component="label" startIcon={uploading ? <CircularProgress size={16} /> : <Upload />} disabled={uploading} size="small">
+                                            Subir PDF
+                                            <input type="file" hidden accept=".pdf" multiple onChange={handleUpload} />
+                                        </Button>
+                                    </Stack>
+                                </Stack>
+
+                                {uploading && <LinearProgress sx={{ mb: 2 }} />}
+
+                                {project.pdfs?.length === 0 ? (
+                                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                                        <Description sx={{ fontSize: 48, color: '#d1d5db', mb: 1 }} />
+                                        <Typography color="text.secondary">No hay PDFs subidos</Typography>
+                                    </Box>
+                                ) : (
+                                    project.pdfs?.map((pdf) => (
+                                        <Paper key={pdf.filename} elevation={0} sx={{
+                                            p: 2, mb: 1.5, border: selectedPdf?.filename === pdf.filename ? '2px solid #2563eb' : '1px solid #e5e7eb',
+                                            borderRadius: 2, cursor: 'pointer', transition: 'all 0.15s',
+                                            '&:hover': { borderColor: '#2563eb' }
+                                        }}
+                                            onClick={() => setSelectedPdf(pdf)}>
+                                            <Stack direction="row" alignItems="center" spacing={2}>
+                                                <Box sx={{ display: 'flex' }}>
+                                                    {preflightStatusIcons[pdf.preflight_status] || preflightStatusIcons.pending}
+                                                </Box>
+                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                    <Typography variant="body2" sx={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {pdf.original_filename}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {(pdf.file_size / 1024).toFixed(1)} KB · {new Date(pdf.uploaded_at).toLocaleDateString('es-ES')}
+                                                    </Typography>
+                                                </Box>
+                                                <Stack direction="row" spacing={0.5}>
+                                                    <Tooltip title="Ejecutar Preflight">
+                                                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handlePreflight(pdf.filename) }}
+                                                            disabled={preflightLoading === pdf.filename}>
+                                                            {preflightLoading === pdf.filename ? <CircularProgress size={18} /> : <Search />}
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title="Eliminar">
+                                                        <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); handleDeletePdf(pdf.filename) }}>
+                                                            <Delete fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+                                        </Paper>
+                                    ))
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Comments */}
+                        <Card sx={{ mt: 2 }}>
+                            <CardContent>
+                                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Comentarios</Typography>
+                                {project.comments?.length > 0 && project.comments.map((c) => (
+                                    <Box key={c.comment_id} sx={{ mb: 2, p: 1.5, borderRadius: 2, backgroundColor: '#f9fafb' }}>
+                                        <Stack direction="row" justifyContent="space-between">
+                                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{c.username}</Typography>
+                                            <Typography variant="caption" color="text.secondary">{new Date(c.created_at).toLocaleString('es-ES')}</Typography>
+                                        </Stack>
+                                        <Typography variant="body2" sx={{ mt: 0.5 }}>{c.message}</Typography>
+                                        {c.pdf_filename && <Chip label={c.pdf_filename} size="small" sx={{ mt: 0.5, height: 20, fontSize: 10 }} />}
+                                    </Box>
+                                ))}
+                                <Stack direction="row" spacing={1}>
+                                    <TextField size="small" fullWidth placeholder="Añadir comentario..." value={comment} onChange={(e) => setComment(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} />
+                                    <IconButton color="primary" onClick={handleAddComment} disabled={!comment.trim()}>
+                                        <Send />
+                                    </IconButton>
+                                </Stack>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+
+                    {/* Right: Preflight results */}
+                    <Grid item xs={12} md={5}>
+                        <Card sx={{ position: 'sticky', top: 16 }}>
+                            <CardContent>
+                                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                                    {selectedPdf ? `Preflight: ${selectedPdf.original_filename}` : 'Seleccione un PDF'}
+                                </Typography>
+                                {selectedPdf?.preflight_result ? (
+                                    <PreflightResults result={selectedPdf.preflight_result} />
+                                ) : selectedPdf ? (
+                                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                                        <Search sx={{ fontSize: 48, color: '#d1d5db', mb: 1 }} />
+                                        <Typography color="text.secondary">Preflight pendiente</Typography>
+                                        <Button variant="outlined" size="small" sx={{ mt: 1 }} startIcon={<Search />}
+                                            onClick={() => handlePreflight(selectedPdf.filename)} disabled={preflightLoading === selectedPdf.filename}>
+                                            Analizar
+                                        </Button>
+                                    </Box>
+                                ) : (
+                                    <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                                        Haga clic en un PDF para ver su análisis
+                                    </Typography>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                </Grid>
+            </Box>
+
+            {/* Status Dialog */}
+            <Dialog open={statusDialog} onClose={() => setStatusDialog(false)}>
+                <DialogTitle>Cambiar Estado</DialogTitle>
+                <DialogContent sx={{ minWidth: 300 }}>
+                    <FormControl fullWidth sx={{ mt: 1 }}>
+                        <InputLabel>Estado</InputLabel>
+                        <Select value={newStatus} label="Estado" onChange={(e) => setNewStatus(e.target.value)}>
+                            {Object.entries(statusLabels).map(([key, label]) => (
+                                <MenuItem key={key} value={key}>{label}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setStatusDialog(false)}>Cancelar</Button>
+                    <Button variant="contained" onClick={handleStatusChange}>Guardar</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>{snackbar.message}</Alert>
+            </Snackbar>
+        </Box>
+    )
+}
+
+export default AdminProjectDetail
