@@ -36,7 +36,7 @@ const PdfPreview = ({ projectId, filename, onClose }) => {
 
         const fetchInfo = async () => {
             try {
-                const res = await api.get(`/api/projects/${projectId}/pdf-info/${encodeURIComponent(filename)}`);
+                const res = await api.get(`/projects/${projectId}/pdf-info/${encodeURIComponent(filename)}`);
                 setTotalPages(res.data.page_count || 0);
             } catch (err) {
                 console.error('Error loading PDF info:', err);
@@ -63,7 +63,7 @@ const PdfPreview = ({ projectId, filename, onClose }) => {
         const fetchThumbnail = async () => {
             try {
                 const res = await api.get(
-                    `/api/projects/${projectId}/thumbnail/${encodeURIComponent(filename)}/page/${currentPage}?width=500`
+                    `/projects/${projectId}/thumbnail/${encodeURIComponent(filename)}/page/${currentPage}?width=500`
                 );
                 const thumbData = res.data.thumbnail;
                 setThumbnail(thumbData);
@@ -86,7 +86,7 @@ const PdfPreview = ({ projectId, filename, onClose }) => {
             if (page < 1 || page > totalPages || pageCache[page]) return;
             try {
                 const res = await api.get(
-                    `/api/projects/${projectId}/thumbnail/${encodeURIComponent(filename)}/page/${page}?width=500`
+                    `/projects/${projectId}/thumbnail/${encodeURIComponent(filename)}/page/${page}?width=500`
                 );
                 setPageCache(prev => ({ ...prev, [page]: res.data.thumbnail }));
             } catch {
