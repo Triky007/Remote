@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/apiService'
 import PreflightResults from '../../components/PreflightResults'
+import PdfPreview from '../../components/PdfPreview'
 import {
     Box, Typography, Button, Card, CardContent, Grid, Chip, Stack,
     TextField, Alert, CircularProgress, Divider, IconButton,
@@ -141,7 +142,7 @@ const AdminProjectDetail = () => {
 
     return (
         <Box sx={{ minHeight: '100vh', backgroundColor: '#f0f2f5', p: 3 }}>
-            <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+            <Box sx={{ maxWidth: 1600, mx: 'auto' }}>
                 {/* Header */}
                 <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
                     <IconButton onClick={() => navigate('/admin')}><ArrowBack /></IconButton>
@@ -157,19 +158,17 @@ const AdminProjectDetail = () => {
                     />
                 </Stack>
 
-                <Grid container spacing={3}>
-                    {/* Left: PDFs */}
-                    <Grid item xs={12} md={7}>
+                <Grid container spacing={2}>
+                    {/* Left: PDFs + Comments */}
+                    <Grid item xs={12} md={3}>
                         <Card>
                             <CardContent>
                                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>PDFs</Typography>
-                                    <Stack direction="row" spacing={1}>
-                                        <Button variant="contained" component="label" startIcon={uploading ? <CircularProgress size={16} /> : <Upload />} disabled={uploading} size="small">
-                                            Subir PDF
-                                            <input type="file" hidden accept=".pdf" multiple onChange={handleUpload} />
-                                        </Button>
-                                    </Stack>
+                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Mis PDFs</Typography>
+                                    <Button variant="contained" component="label" startIcon={uploading ? <CircularProgress size={16} /> : <Upload />} disabled={uploading} size="small">
+                                        Subir PDF
+                                        <input type="file" hidden accept=".pdf" multiple onChange={handleUpload} />
+                                    </Button>
                                 </Stack>
 
                                 {uploading && <LinearProgress sx={{ mb: 2 }} />}
@@ -182,12 +181,12 @@ const AdminProjectDetail = () => {
                                 ) : (
                                     project.pdfs?.map((pdf) => (
                                         <Paper key={pdf.filename} elevation={0} sx={{
-                                            p: 2, mb: 1.5, border: selectedPdf?.filename === pdf.filename ? '2px solid #2563eb' : '1px solid #e5e7eb',
+                                            p: 1.5, mb: 1, border: selectedPdf?.filename === pdf.filename ? '2px solid #2563eb' : '1px solid #e5e7eb',
                                             borderRadius: 2, cursor: 'pointer', transition: 'all 0.15s',
                                             '&:hover': { borderColor: '#2563eb' }
                                         }}
                                             onClick={() => setSelectedPdf(pdf)}>
-                                            <Stack direction="row" alignItems="center" spacing={2}>
+                                            <Stack direction="row" alignItems="center" spacing={1}>
                                                 <Box sx={{ display: 'flex' }}>
                                                     {preflightStatusIcons[pdf.preflight_status] || preflightStatusIcons.pending}
                                                 </Box>
@@ -199,11 +198,11 @@ const AdminProjectDetail = () => {
                                                         {(pdf.file_size / 1024).toFixed(1)} KB · {new Date(pdf.uploaded_at).toLocaleDateString('es-ES')}
                                                     </Typography>
                                                 </Box>
-                                                <Stack direction="row" spacing={0.5}>
+                                                <Stack direction="row" spacing={0}>
                                                     <Tooltip title="Ejecutar Preflight">
                                                         <IconButton size="small" onClick={(e) => { e.stopPropagation(); handlePreflight(pdf.filename) }}
                                                             disabled={preflightLoading === pdf.filename}>
-                                                            {preflightLoading === pdf.filename ? <CircularProgress size={18} /> : <Search />}
+                                                            {preflightLoading === pdf.filename ? <CircularProgress size={16} /> : <Search fontSize="small" />}
                                                         </IconButton>
                                                     </Tooltip>
                                                     <Tooltip title="Eliminar">
@@ -234,7 +233,7 @@ const AdminProjectDetail = () => {
                                     </Box>
                                 ))}
                                 <Stack direction="row" spacing={1}>
-                                    <TextField size="small" fullWidth placeholder="Añadir comentario..." value={comment} onChange={(e) => setComment(e.target.value)}
+                                    <TextField size="small" fullWidth placeholder="Escribir comentario..." value={comment} onChange={(e) => setComment(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} />
                                     <IconButton color="primary" onClick={handleAddComment} disabled={!comment.trim()}>
                                         <Send />
@@ -244,8 +243,8 @@ const AdminProjectDetail = () => {
                         </Card>
                     </Grid>
 
-                    {/* Right: Preflight results */}
-                    <Grid item xs={12} md={5}>
+                    {/* Center: Preflight results */}
+                    <Grid item xs={12} md={4}>
                         <Card sx={{ position: 'sticky', top: 16 }}>
                             <CardContent>
                                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -268,6 +267,16 @@ const AdminProjectDetail = () => {
                                     </Typography>
                                 )}
                             </CardContent>
+                        </Card>
+                    </Grid>
+
+                    {/* Right: PDF Preview */}
+                    <Grid item xs={12} md={5}>
+                        <Card sx={{ position: 'sticky', top: 16, height: 'calc(100vh - 120px)' }}>
+                            <PdfPreview
+                                projectId={projectId}
+                                filename={selectedPdf?.filename}
+                            />
                         </Card>
                     </Grid>
                 </Grid>

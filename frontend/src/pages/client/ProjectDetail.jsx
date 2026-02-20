@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/apiService'
 import PreflightResults from '../../components/PreflightResults'
+import PdfPreview from '../../components/PdfPreview'
 import {
     Box, Typography, Button, Card, CardContent, Grid, Stack, Chip,
     TextField, IconButton, CircularProgress, Paper, LinearProgress, Alert, Snackbar, Tooltip
@@ -110,7 +111,7 @@ const ClientProjectDetail = () => {
 
     return (
         <Box sx={{ minHeight: '100vh', backgroundColor: '#f0f2f5', p: 3 }}>
-            <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
+            <Box sx={{ maxWidth: 1600, mx: 'auto' }}>
                 <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
                     <IconButton onClick={() => navigate('/client')}><ArrowBack /></IconButton>
                     <Box sx={{ flex: 1 }}>
@@ -120,8 +121,8 @@ const ClientProjectDetail = () => {
                     <Chip label={statusLabels[project.status] || project.status} color={statusColors[project.status] || 'default'} sx={{ fontWeight: 600 }} />
                 </Stack>
 
-                <Grid container spacing={3}>
-                    <Grid item xs={12} md={7}>
+                <Grid container spacing={2}>
+                    <Grid item xs={12} md={3}>
                         {/* Upload & PDFs */}
                         <Card>
                             <CardContent>
@@ -143,11 +144,11 @@ const ClientProjectDetail = () => {
                                 ) : (
                                     project.pdfs?.map((pdf) => (
                                         <Paper key={pdf.filename} elevation={0} sx={{
-                                            p: 2, mb: 1.5,
+                                            p: 1.5, mb: 1,
                                             border: selectedPdf?.filename === pdf.filename ? '2px solid #2563eb' : '1px solid #e5e7eb',
                                             borderRadius: 2, cursor: 'pointer', '&:hover': { borderColor: '#2563eb' }
                                         }} onClick={() => setSelectedPdf(pdf)}>
-                                            <Stack direction="row" alignItems="center" spacing={2}>
+                                            <Stack direction="row" alignItems="center" spacing={1}>
                                                 <Box sx={{ display: 'flex' }}>
                                                     {preflightStatusIcons[pdf.preflight_status] || preflightStatusIcons.pending}
                                                 </Box>
@@ -162,7 +163,7 @@ const ClientProjectDetail = () => {
                                                 <Tooltip title="Analizar PDF">
                                                     <IconButton size="small" onClick={(e) => { e.stopPropagation(); handlePreflight(pdf.filename) }}
                                                         disabled={preflightLoading === pdf.filename}>
-                                                        {preflightLoading === pdf.filename ? <CircularProgress size={18} /> : <Search />}
+                                                        {preflightLoading === pdf.filename ? <CircularProgress size={16} /> : <Search fontSize="small" />}
                                                     </IconButton>
                                                 </Tooltip>
                                             </Stack>
@@ -194,8 +195,8 @@ const ClientProjectDetail = () => {
                         </Card>
                     </Grid>
 
-                    {/* Preflight panel */}
-                    <Grid item xs={12} md={5}>
+                    {/* Center: Preflight panel */}
+                    <Grid item xs={12} md={4}>
                         <Card sx={{ position: 'sticky', top: 16 }}>
                             <CardContent>
                                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -218,6 +219,16 @@ const ClientProjectDetail = () => {
                                     </Typography>
                                 )}
                             </CardContent>
+                        </Card>
+                    </Grid>
+
+                    {/* Right: PDF Preview */}
+                    <Grid item xs={12} md={5}>
+                        <Card sx={{ position: 'sticky', top: 16, height: 'calc(100vh - 120px)' }}>
+                            <PdfPreview
+                                projectId={projectId}
+                                filename={selectedPdf?.filename}
+                            />
                         </Card>
                     </Grid>
                 </Grid>

@@ -249,3 +249,55 @@ async def add_comment(
     )
 
     return {"success": True, "comment": comment}
+
+
+# ─── THUMBNAILS ───────────────────────────────────────────────────────────────
+
+@router.get("/{project_id}/thumbnail/{filename}/page/{page_number}")
+async def get_pdf_page_thumbnail(
+    project_id: str,
+    filename: str,
+    page_number: int,
+    width: int = 400,
+    current_user: dict = Depends(get_current_user)
+):
+    """Genera thumbnail de una página de un PDF"""
+    from services.pdf_thumbnail_service import pdf_thumbnail_service
+
+    project = project_service.get_project_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    if current_user["role"] == "client" and project.get("client_user_id") != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Sin acceso")
+
+    pdf_path = Path(os.path.join(settings.UPLOADS_DIR, project_id, filename))
+    if not pdf_path.exists():
+        raise HTTPException(status_code=404, detail="PDF no encontrado")
+
+    result = pdf_thumbnail_service.get_page_thumbnail(pdf_path, page_number, width)
+    return result
+
+
+@router.get("/{project_id}/pdf-info/{filename}")
+async def get_pdf_info(
+    project_id: str,
+    filename: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Obtiene info básica de un PDF (número de páginas)"""
+    from services.pdf_thumbnail_service import pdf_thumbnail_service
+
+    project = project_service.get_project_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    if current_user["role"] == "client" and project.get("client_user_id") != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Sin acceso")
+
+    pdf_path = Path(os.path.join(settings.UPLOADS_DIR, project_id, filename))
+    if not pdf_path.exists():
+        raise HTTPException(status_code=404, detail="PDF no encontrado")
+
+    page_count = pdf_thumbnail_service.get_page_count(pdf_path)
+    return {"filename": filename, "page_count": page_count}
