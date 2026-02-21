@@ -86,7 +86,7 @@ class PdfThumbnailService:
                 "pdf_path": str(pdf_path),
                 "first_page": page_number,
                 "last_page": page_number,
-                "dpi": 100,
+                "dpi": 200,
             }
             if poppler_path:
                 kwargs["poppler_path"] = poppler_path
@@ -105,7 +105,7 @@ class PdfThumbnailService:
             img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
             buf = io.BytesIO()
-            img.save(buf, format='JPEG', quality=85, optimize=True)
+            img.save(buf, format='JPEG', quality=92, optimize=True)
             buf.seek(0)
             img_b64 = base64.b64encode(buf.read()).decode()
 

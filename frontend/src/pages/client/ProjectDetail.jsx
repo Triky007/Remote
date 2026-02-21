@@ -111,7 +111,7 @@ const ClientProjectDetail = () => {
 
     return (
         <Box sx={{ minHeight: '100vh', backgroundColor: '#f0f2f5', p: 3 }}>
-            <Box sx={{ maxWidth: 1600, mx: 'auto' }}>
+            <Box sx={{ mx: 'auto' }}>
                 <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
                     <IconButton onClick={() => navigate('/client')}><ArrowBack /></IconButton>
                     <Box sx={{ flex: 1 }}>
@@ -122,7 +122,7 @@ const ClientProjectDetail = () => {
                 </Stack>
 
                 <Grid container spacing={2}>
-                    <Grid item xs={12} md={3}>
+                    <Grid item xs={12} md={2}>
                         {/* Upload & PDFs */}
                         <Card>
                             <CardContent>
@@ -196,7 +196,7 @@ const ClientProjectDetail = () => {
                     </Grid>
 
                     {/* Center: Preflight panel */}
-                    <Grid item xs={12} md={4}>
+                    <Grid item xs={12} md={3}>
                         <Card sx={{ position: 'sticky', top: 16 }}>
                             <CardContent>
                                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -223,7 +223,7 @@ const ClientProjectDetail = () => {
                     </Grid>
 
                     {/* Right: PDF Preview */}
-                    <Grid item xs={12} md={5}>
+                    <Grid item xs={12} md={7}>
                         <Card sx={{ position: 'sticky', top: 16, height: 'calc(100vh - 120px)' }}>
                             <PdfPreview
                                 projectId={projectId}
