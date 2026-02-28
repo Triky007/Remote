@@ -35,10 +35,16 @@ def create_app() -> FastAPI:
     from routes.auth import router as auth_router
     from routes.users import router as users_router
     from routes.projects import router as projects_router
+    from routes.machines import router as machines_router
+    from routes.clients import router as clients_router
+    from routes.process_catalog import router as process_catalog_router
 
     app.include_router(auth_router)
     app.include_router(users_router)
     app.include_router(projects_router)
+    app.include_router(machines_router)
+    app.include_router(clients_router)
+    app.include_router(process_catalog_router)
 
     # Static files for uploads (optional, for serving PDFs)
     if os.path.exists(settings.UPLOADS_DIR):

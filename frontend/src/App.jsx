@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminProjectDetail from './pages/admin/ProjectDetail'
+import AdminCatalogPage from './pages/admin/CatalogPage'
 import ClientDashboard from './pages/client/Dashboard'
 import ClientProjectDetail from './pages/client/ProjectDetail'
 
@@ -30,6 +31,9 @@ const App = () => {
             } />
             <Route path="/admin/project/:projectId" element={
                 <ProtectedRoute requiredRole="admin"><AdminProjectDetail /></ProtectedRoute>
+            } />
+            <Route path="/admin/catalogs" element={
+                <ProtectedRoute requiredRole="admin"><AdminCatalogPage /></ProtectedRoute>
             } />
 
             {/* Client routes */}

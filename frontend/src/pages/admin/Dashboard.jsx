@@ -10,7 +10,7 @@ import {
 } from '@mui/material'
 import {
     Add, Logout, Person, FolderOpen, Email, ContentCopy,
-    CheckCircle, Warning, Error as ErrorIcon, Schedule, PersonAdd
+    CheckCircle, Warning, Error as ErrorIcon, Schedule, PersonAdd, Settings
 } from '@mui/icons-material'
 
 const statusColors = {
@@ -173,6 +173,10 @@ const AdminDashboard = () => {
                     </Button>
                     <Button variant="outlined" startIcon={<PersonAdd />} onClick={() => setUserDialog(true)}>
                         Nuevo Cliente
+                    </Button>
+                    <Button variant="outlined" startIcon={<Settings />} onClick={() => navigate('/admin/catalogs')}
+                        color="secondary">
+                        Catálogos
                     </Button>
                 </Stack>
 

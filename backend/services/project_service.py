@@ -79,6 +79,7 @@ class ProjectService:
             "status": "pending",
             "pdfs": [],
             "comments": [],
+            "processes": [],
             "created_by": created_by,
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat()
@@ -195,6 +196,99 @@ class ProjectService:
                 self._save_projects(projects)
                 return comment
         return None
+
+    # ─── PROCESSES ─────────────────────────────────────────────────────────────
+
+    def _ensure_processes_array(self, project: Dict[str, Any]) -> Dict[str, Any]:
+        """Asegura que el proyecto tiene el array processes (backwards compatible)"""
+        if "processes" not in project:
+            project["processes"] = []
+        return project
+
+    def add_process(
+        self,
+        project_id: str,
+        process_type_id: str,
+        name: str,
+        estimated_hours: float = 1.0,
+        machine_id: Optional[str] = None,
+        assigned_to: Optional[str] = None,
+        dependencies: Optional[List[str]] = None,
+        priority: int = 1,
+        notes: str = "",
+    ) -> Optional[Dict[str, Any]]:
+        """Añade un proceso a un proyecto"""
+        projects = self._load_projects()
+        for i, p in enumerate(projects):
+            if p["project_id"] == project_id:
+                self._ensure_processes_array(projects[i])
+                process = {
+                    "process_id": str(uuid.uuid4()),
+                    "process_type_id": process_type_id,
+                    "name": name,
+                    "status": "pending",
+                    "estimated_hours": estimated_hours,
+                    "start_date": None,
+                    "end_date": None,
+                    "machine_id": machine_id,
+                    "assigned_to": assigned_to,
+                    "dependencies": dependencies or [],
+                    "priority": priority,
+                    "notes": notes,
+                    "created_at": datetime.now().isoformat(),
+                    "updated_at": datetime.now().isoformat(),
+                }
+                projects[i]["processes"].append(process)
+                projects[i]["updated_at"] = datetime.now().isoformat()
+                self._save_projects(projects)
+                return process
+        return None
+
+    def update_process(
+        self, project_id: str, process_id: str, update_data: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """Actualiza un proceso de un proyecto"""
+        projects = self._load_projects()
+        for i, p in enumerate(projects):
+            if p["project_id"] == project_id:
+                self._ensure_processes_array(projects[i])
+                for j, proc in enumerate(projects[i]["processes"]):
+                    if proc["process_id"] == process_id:
+                        update_data.pop("process_id", None)
+                        projects[i]["processes"][j].update(update_data)
+                        projects[i]["processes"][j]["updated_at"] = datetime.now().isoformat()
+                        projects[i]["updated_at"] = datetime.now().isoformat()
+                        self._save_projects(projects)
+                        return projects[i]["processes"][j]
+        return None
+
+    def remove_process(self, project_id: str, process_id: str) -> bool:
+        """Elimina un proceso de un proyecto"""
+        projects = self._load_projects()
+        for i, p in enumerate(projects):
+            if p["project_id"] == project_id:
+                self._ensure_processes_array(projects[i])
+                original_len = len(projects[i]["processes"])
+                projects[i]["processes"] = [
+                    proc for proc in projects[i]["processes"]
+                    if proc["process_id"] != process_id
+                ]
+                if len(projects[i]["processes"]) < original_len:
+                    projects[i]["updated_at"] = datetime.now().isoformat()
+                    self._save_projects(projects)
+                    return True
+        return False
+
+    def update_process_status(
+        self, project_id: str, process_id: str, new_status: str
+    ) -> Optional[Dict[str, Any]]:
+        """Cambia el estado de un proceso"""
+        valid_statuses = ["pending", "in_progress", "completed", "cancelled"]
+        if new_status not in valid_statuses:
+            raise ValueError(f"Estado inválido. Estados válidos: {valid_statuses}")
+        return self.update_process(project_id, process_id, {"status": new_status})
+
+    # ─── DELETE PROJECT ───────────────────────────────────────────────────────
 
     def delete_project(self, project_id: str) -> bool:
         """Elimina un proyecto y sus archivos"""

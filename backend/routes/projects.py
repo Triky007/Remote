@@ -6,7 +6,7 @@ import uuid
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from config import settings
 from services.auth_service import get_current_user, get_current_admin
@@ -31,6 +31,34 @@ class UpdateStatusRequest(BaseModel):
 class AddCommentRequest(BaseModel):
     message: str
     pdf_filename: Optional[str] = None
+
+
+class AddProcessRequest(BaseModel):
+    process_type_id: str
+    name: str
+    estimated_hours: float = 1.0
+    machine_id: Optional[str] = None
+    assigned_to: Optional[str] = None
+    dependencies: Optional[List[str]] = None
+    priority: int = 1
+    notes: str = ""
+
+
+class UpdateProcessRequest(BaseModel):
+    name: Optional[str] = None
+    process_type_id: Optional[str] = None
+    estimated_hours: Optional[float] = None
+    machine_id: Optional[str] = None
+    assigned_to: Optional[str] = None
+    dependencies: Optional[List[str]] = None
+    priority: Optional[int] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class UpdateProcessStatusRequest(BaseModel):
+    status: str
 
 
 # ─── PROJECTS CRUD ────────────────────────────────────────────────────────────
@@ -301,3 +329,78 @@ async def get_pdf_info(
 
     page_count = pdf_thumbnail_service.get_page_count(pdf_path)
     return {"filename": filename, "page_count": page_count}
+
+
+# ─── PROCESSES ────────────────────────────────────────────────────────────────
+
+@router.post("/{project_id}/processes", status_code=status.HTTP_201_CREATED)
+async def add_process(
+    project_id: str,
+    request: AddProcessRequest,
+    current_user: dict = Depends(get_current_admin),
+):
+    """Añade un proceso a un proyecto (solo admin)"""
+    process = project_service.add_process(
+        project_id=project_id,
+        process_type_id=request.process_type_id,
+        name=request.name,
+        estimated_hours=request.estimated_hours,
+        machine_id=request.machine_id,
+        assigned_to=request.assigned_to,
+        dependencies=request.dependencies,
+        priority=request.priority,
+        notes=request.notes,
+    )
+    if not process:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+    return {"success": True, "process": process}
+
+
+@router.put("/{project_id}/processes/{process_id}")
+async def update_process(
+    project_id: str,
+    process_id: str,
+    request: UpdateProcessRequest,
+    current_user: dict = Depends(get_current_admin),
+):
+    """Actualiza un proceso (solo admin)"""
+    update_data = request.model_dump(exclude_none=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No hay datos para actualizar")
+
+    process = project_service.update_process(project_id, process_id, update_data)
+    if not process:
+        raise HTTPException(status_code=404, detail="Proyecto o proceso no encontrado")
+    return {"success": True, "process": process}
+
+
+@router.delete("/{project_id}/processes/{process_id}")
+async def remove_process(
+    project_id: str,
+    process_id: str,
+    current_user: dict = Depends(get_current_admin),
+):
+    """Elimina un proceso de un proyecto (solo admin)"""
+    if not project_service.remove_process(project_id, process_id):
+        raise HTTPException(status_code=404, detail="Proyecto o proceso no encontrado")
+    return {"success": True, "detail": "Proceso eliminado"}
+
+
+@router.patch("/{project_id}/processes/{process_id}/status")
+async def update_process_status(
+    project_id: str,
+    process_id: str,
+    request: UpdateProcessStatusRequest,
+    current_user: dict = Depends(get_current_admin),
+):
+    """Cambia el estado de un proceso (solo admin)"""
+    try:
+        process = project_service.update_process_status(
+            project_id, process_id, request.status
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if not process:
+        raise HTTPException(status_code=404, detail="Proyecto o proceso no encontrado")
+    return {"success": True, "process": process}
