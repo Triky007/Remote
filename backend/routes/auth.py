@@ -59,8 +59,9 @@ async def login_magic_link(request: MagicLinkRequest):
             detail="Token inválido o expirado"
         )
 
-    # Get user
-    user = user_service.get_user_by_id(validation["user_id"])
+    # Get user (busca en users.json y clients.json)
+    from services.auth_service import _find_user_by_id
+    user = _find_user_by_id(validation["user_id"])
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -78,12 +79,13 @@ async def login_magic_link(request: MagicLinkRequest):
         data={"sub": user["username"], "role": user.get("role", "client")}
     )
 
+    user_id = user.get("user_id") or user.get("client_id")
     return LoginResponse(
         success=True,
         message="Acceso concedido",
         token=token,
         user={
-            "user_id": user["user_id"],
+            "user_id": user_id,
             "username": user["username"],
             "email": user.get("email", ""),
             "role": user["role"],

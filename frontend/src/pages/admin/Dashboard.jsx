@@ -75,7 +75,7 @@ const AdminDashboard = () => {
 
     const handleCreateUser = async () => {
         try {
-            await api.post('/users', { ...newUser, role: 'client' })
+            await api.post('/clients', { ...newUser, role: 'client' })
             setUserDialog(false)
             setNewUser({ username: '', password: '', email: '', full_name: '' })
             setSnackbar({ open: true, message: 'Cliente creado', severity: 'success' })

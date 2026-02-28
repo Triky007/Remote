@@ -143,14 +143,6 @@ class UserService:
             return True
         return False
 
-    def get_clients(self) -> List[Dict[str, Any]]:
-        """Obtiene solo los usuarios con rol 'client'"""
-        users = self._load_users()
-        return [
-            {k: v for k, v in u.items() if k != "password_hash"}
-            for u in users if u.get("role") == "client"
-        ]
-
 
 # Instancia global
 user_service = UserService()

@@ -36,8 +36,9 @@ async def list_users(current_user: dict = Depends(get_current_admin)):
 
 @router.get("/clients")
 async def list_clients(current_user: dict = Depends(get_current_admin)):
-    """Lista solo clientes"""
-    return user_service.get_clients()
+    """Lista solo clientes (desde clients.json)"""
+    from services.client_service import client_service
+    return client_service.get_all()
 
 
 @router.post("")
@@ -75,7 +76,8 @@ async def invite_user(
     current_user: dict = Depends(get_current_admin)
 ):
     """Envía invitación email con magic link a un usuario"""
-    user = user_service.get_user_by_id(user_id)
+    from services.auth_service import _find_user_by_id
+    user = _find_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 

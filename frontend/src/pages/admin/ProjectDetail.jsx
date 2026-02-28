@@ -7,11 +7,13 @@ import {
     Box, Typography, Button, Card, CardContent, Grid, Chip, Stack,
     TextField, Alert, CircularProgress, Divider, IconButton,
     Dialog, DialogTitle, DialogContent, DialogActions, Select, MenuItem,
-    FormControl, InputLabel, Paper, LinearProgress, Tooltip, Snackbar
+    FormControl, InputLabel, Paper, LinearProgress, Tooltip, Snackbar,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material'
 import {
     ArrowBack, Upload, Search, Delete, Comment, Send, Description,
-    CheckCircle, Warning, Error as ErrorIcon, Schedule
+    CheckCircle, Warning, Error as ErrorIcon, Schedule, Add,
+    PlayArrow, Stop, PrecisionManufacturing
 } from '@mui/icons-material'
 
 const statusColors = {
@@ -27,6 +29,13 @@ const preflightStatusIcons = {
     pending: <Schedule sx={{ color: '#9ca3af' }} />,
 }
 
+const processStatusLabels = {
+    pending: 'Pendiente', in_progress: 'En proceso', completed: 'Completado', cancelled: 'Cancelado'
+}
+const processStatusColors = {
+    pending: 'default', in_progress: 'info', completed: 'success', cancelled: 'error'
+}
+
 const AdminProjectDetail = () => {
     const { projectId } = useParams()
     const navigate = useNavigate()
@@ -40,10 +49,22 @@ const AdminProjectDetail = () => {
     const [comment, setComment] = useState('')
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
+    // Process management
+    const [machines, setMachines] = useState([])
+    const [processCatalog, setProcessCatalog] = useState([])
+    const [addProcessDialog, setAddProcessDialog] = useState(false)
+    const [newProcess, setNewProcess] = useState({ process_type_id: '', name: '', machine_id: '', estimated_hours: 1, priority: 1 })
+
     const loadProject = useCallback(async () => {
         try {
-            const res = await api.get(`/projects/${projectId}`)
-            setProject(res.data)
+            const [projRes, machRes, catRes] = await Promise.all([
+                api.get(`/projects/${projectId}`),
+                api.get('/machines?active_only=true'),
+                api.get('/process-catalog?active_only=true'),
+            ])
+            setProject(projRes.data)
+            setMachines(machRes.data)
+            setProcessCatalog(catRes.data)
         } catch (err) {
             setSnackbar({ open: true, message: 'Error cargando proyecto', severity: 'error' })
         } finally {
@@ -125,6 +146,55 @@ const AdminProjectDetail = () => {
         }
     }
 
+    // ── Process handlers ──
+    const handleSelectCatalogProcess = (processTypeId) => {
+        const cat = processCatalog.find(p => p.process_type_id === processTypeId)
+        if (cat) {
+            setNewProcess(prev => ({
+                ...prev,
+                process_type_id: processTypeId,
+                name: cat.name,
+                estimated_hours: cat.default_estimated_hours || 1,
+                machine_id: '',
+            }))
+        }
+    }
+
+    const handleAddProcess = async () => {
+        try {
+            await api.post(`/projects/${projectId}/processes`, {
+                ...newProcess,
+                machine_id: newProcess.machine_id || null,
+            })
+            setAddProcessDialog(false)
+            setNewProcess({ process_type_id: '', name: '', machine_id: '', estimated_hours: 1, priority: 1 })
+            setSnackbar({ open: true, message: 'Proceso añadido', severity: 'success' })
+            loadProject()
+        } catch (err) {
+            setSnackbar({ open: true, message: err.response?.data?.detail || 'Error', severity: 'error' })
+        }
+    }
+
+    const handleDeleteProcess = async (processId) => {
+        try {
+            await api.delete(`/projects/${projectId}/processes/${processId}`)
+            setSnackbar({ open: true, message: 'Proceso eliminado', severity: 'success' })
+            loadProject()
+        } catch (err) {
+            setSnackbar({ open: true, message: 'Error', severity: 'error' })
+        }
+    }
+
+    const handleProcessStatus = async (processId, newSt) => {
+        try {
+            await api.patch(`/projects/${projectId}/processes/${processId}/status`, { status: newSt })
+            setSnackbar({ open: true, message: 'Estado actualizado', severity: 'success' })
+            loadProject()
+        } catch (err) {
+            setSnackbar({ open: true, message: 'Error', severity: 'error' })
+        }
+    }
+
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>
@@ -157,6 +227,85 @@ const AdminProjectDetail = () => {
                         sx={{ cursor: 'pointer', fontWeight: 600 }}
                     />
                 </Stack>
+
+                {/* ═══ Processes Section ═══ */}
+                <Card sx={{ mb: 2 }}>
+                    <CardContent>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                <PrecisionManufacturing sx={{ mr: 1, verticalAlign: 'middle', fontSize: 20 }} />
+                                Procesos ({(project.processes || []).length})
+                            </Typography>
+                            <Button variant="contained" size="small" startIcon={<Add />}
+                                onClick={() => setAddProcessDialog(true)}>Añadir Proceso</Button>
+                        </Stack>
+                        {(project.processes || []).length === 0 ? (
+                            <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                                No hay procesos asignados
+                            </Typography>
+                        ) : (
+                            <TableContainer>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: '#f8fafc', fontSize: 13 } }}>
+                                            <TableCell>Proceso</TableCell>
+                                            <TableCell>Máquina</TableCell>
+                                            <TableCell>Horas est.</TableCell>
+                                            <TableCell>Prioridad</TableCell>
+                                            <TableCell>Estado</TableCell>
+                                            <TableCell align="right">Acciones</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {(project.processes || []).map(proc => {
+                                            const cat = processCatalog.find(c => c.process_type_id === proc.process_type_id)
+                                            const machine = machines.find(m => m.machine_id === proc.machine_id)
+                                            return (
+                                                <TableRow key={proc.process_id} hover>
+                                                    <TableCell>
+                                                        <Stack direction="row" alignItems="center" spacing={1}>
+                                                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: cat?.color || '#ccc' }} />
+                                                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{proc.name}</Typography>
+                                                        </Stack>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            {machine?.name || '—'}
+                                                        </Typography>
+                                                    </TableCell>
+                                                    <TableCell>{proc.estimated_hours}h</TableCell>
+                                                    <TableCell>
+                                                        <Chip label={proc.priority} size="small" variant="outlined"
+                                                            color={proc.priority >= 4 ? 'error' : proc.priority >= 3 ? 'warning' : 'default'} />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <FormControl size="small" sx={{ minWidth: 130 }}>
+                                                            <Select value={proc.status} size="small"
+                                                                sx={{ fontSize: 12, height: 28 }}
+                                                                onChange={(e) => handleProcessStatus(proc.process_id, e.target.value)}>
+                                                                {Object.entries(processStatusLabels).map(([k, v]) => (
+                                                                    <MenuItem key={k} value={k} sx={{ fontSize: 13 }}>{v}</MenuItem>
+                                                                ))}
+                                                            </Select>
+                                                        </FormControl>
+                                                    </TableCell>
+                                                    <TableCell align="right">
+                                                        <Tooltip title="Eliminar">
+                                                            <IconButton size="small" color="error"
+                                                                onClick={() => handleDeleteProcess(proc.process_id)}>
+                                                                <Delete fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        )}
+                    </CardContent>
+                </Card>
 
                 <Grid container spacing={2}>
                     {/* Left: PDFs + Comments */}
@@ -298,6 +447,54 @@ const AdminProjectDetail = () => {
                 <DialogActions>
                     <Button onClick={() => setStatusDialog(false)}>Cancelar</Button>
                     <Button variant="contained" onClick={handleStatusChange}>Guardar</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Add Process Dialog */}
+            <Dialog open={addProcessDialog} onClose={() => setAddProcessDialog(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Añadir Proceso</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                        <FormControl fullWidth>
+                            <InputLabel>Tipo de proceso</InputLabel>
+                            <Select value={newProcess.process_type_id} label="Tipo de proceso"
+                                onChange={(e) => handleSelectCatalogProcess(e.target.value)}>
+                                {processCatalog.map(p => (
+                                    <MenuItem key={p.process_type_id} value={p.process_type_id}>
+                                        <Stack direction="row" alignItems="center" spacing={1}>
+                                            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: p.color || '#ccc' }} />
+                                            <span>{p.name}</span>
+                                        </Stack>
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <TextField label="Nombre" value={newProcess.name}
+                            onChange={(e) => setNewProcess({ ...newProcess, name: e.target.value })} fullWidth />
+                        <FormControl fullWidth>
+                            <InputLabel>Máquina</InputLabel>
+                            <Select value={newProcess.machine_id} label="Máquina"
+                                onChange={(e) => setNewProcess({ ...newProcess, machine_id: e.target.value })}>
+                                <MenuItem value=""><em>Sin asignar</em></MenuItem>
+                                {machines.map(m => (
+                                    <MenuItem key={m.machine_id} value={m.machine_id}>{m.name} ({m.type})</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <Stack direction="row" spacing={2}>
+                            <TextField label="Horas estimadas" type="number" value={newProcess.estimated_hours}
+                                onChange={(e) => setNewProcess({ ...newProcess, estimated_hours: parseFloat(e.target.value) || 1 })}
+                                fullWidth inputProps={{ min: 0.25, step: 0.25 }} />
+                            <TextField label="Prioridad (1-5)" type="number" value={newProcess.priority}
+                                onChange={(e) => setNewProcess({ ...newProcess, priority: parseInt(e.target.value) || 1 })}
+                                fullWidth inputProps={{ min: 1, max: 5 }} />
+                        </Stack>
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setAddProcessDialog(false)}>Cancelar</Button>
+                    <Button variant="contained" onClick={handleAddProcess}
+                        disabled={!newProcess.process_type_id || !newProcess.name}>Añadir</Button>
                 </DialogActions>
             </Dialog>
 
