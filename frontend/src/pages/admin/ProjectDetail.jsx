@@ -820,14 +820,9 @@ const AdminProjectDetail = () => {
                                 <InputLabel>Tam. papel</InputLabel>
                                 <Select value={editProject.paper_size} label="Tam. papel"
                                     onChange={(e) => setEditProject({ ...editProject, paper_size: e.target.value })}>
-                                    <MenuItem value="A5">A5</MenuItem>
-                                    <MenuItem value="A4">A4</MenuItem>
-                                    <MenuItem value="A3">A3</MenuItem>
-                                    <MenuItem value="SRA3">SRA3</MenuItem>
-                                    <MenuItem value="A2">A2</MenuItem>
-                                    <MenuItem value="SRA2">SRA2</MenuItem>
-                                    <MenuItem value="70x100">70×100</MenuItem>
-                                    <MenuItem value="Personalizado">Personalizado</MenuItem>
+                                    <MenuItem value="1000x700">1000×700</MenuItem>
+                                    <MenuItem value="950x650">950×650</MenuItem>
+                                    <MenuItem value="900x650">900×650</MenuItem>
                                 </Select>
                             </FormControl>
                         </Stack>
