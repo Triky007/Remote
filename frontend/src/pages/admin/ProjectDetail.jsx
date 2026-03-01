@@ -12,7 +12,7 @@ import {
 } from '@mui/material'
 import {
     ArrowBack, Upload, Search, Delete, Comment, Send, Description,
-    CheckCircle, Warning, Error as ErrorIcon, Schedule, Add,
+    CheckCircle, Warning, Error as ErrorIcon, Schedule, Add, Edit,
     PlayArrow, Stop, PrecisionManufacturing, CalendarMonth, Gavel
 } from '@mui/icons-material'
 
@@ -53,7 +53,8 @@ const AdminProjectDetail = () => {
     const [machines, setMachines] = useState([])
     const [processCatalog, setProcessCatalog] = useState([])
     const [addProcessDialog, setAddProcessDialog] = useState(false)
-    const [newProcess, setNewProcess] = useState({ process_type_id: '', name: '', machine_id: '', estimated_hours: 1, priority: 1 })
+    const [editingProcess, setEditingProcess] = useState(null)
+    const [newProcess, setNewProcess] = useState({ process_type_id: '', name: '', machine_id: '', estimated_hours: 1, priority: 1, start_date: '', end_date: '' })
 
     const loadProject = useCallback(async () => {
         try {
@@ -162,17 +163,45 @@ const AdminProjectDetail = () => {
 
     const handleAddProcess = async () => {
         try {
-            await api.post(`/projects/${projectId}/processes`, {
-                ...newProcess,
-                machine_id: newProcess.machine_id || null,
-            })
+            if (editingProcess) {
+                await api.put(`/projects/${projectId}/processes/${editingProcess.process_id}`, {
+                    name: newProcess.name,
+                    process_type_id: newProcess.process_type_id,
+                    machine_id: newProcess.machine_id || null,
+                    estimated_hours: newProcess.estimated_hours,
+                    priority: newProcess.priority,
+                    start_date: newProcess.start_date || null,
+                    end_date: newProcess.end_date || null,
+                })
+                setSnackbar({ open: true, message: 'Proceso actualizado', severity: 'success' })
+            } else {
+                await api.post(`/projects/${projectId}/processes`, {
+                    ...newProcess,
+                    machine_id: newProcess.machine_id || null,
+                })
+                setSnackbar({ open: true, message: 'Proceso añadido', severity: 'success' })
+            }
             setAddProcessDialog(false)
-            setNewProcess({ process_type_id: '', name: '', machine_id: '', estimated_hours: 1, priority: 1 })
-            setSnackbar({ open: true, message: 'Proceso añadido', severity: 'success' })
+            setEditingProcess(null)
+            setNewProcess({ process_type_id: '', name: '', machine_id: '', estimated_hours: 1, priority: 1, start_date: '', end_date: '' })
             loadProject()
         } catch (err) {
             setSnackbar({ open: true, message: err.response?.data?.detail || 'Error', severity: 'error' })
         }
+    }
+
+    const openEditProcess = (proc) => {
+        setEditingProcess(proc)
+        setNewProcess({
+            process_type_id: proc.process_type_id || '',
+            name: proc.name,
+            machine_id: proc.machine_id || '',
+            estimated_hours: proc.estimated_hours || 1,
+            priority: proc.priority || 1,
+            start_date: proc.start_date ? proc.start_date.slice(0, 16) : '',
+            end_date: proc.end_date ? proc.end_date.slice(0, 16) : '',
+        })
+        setAddProcessDialog(true)
     }
 
     const handleDeleteProcess = async (processId) => {
@@ -330,6 +359,12 @@ const AdminProjectDetail = () => {
                                                         </FormControl>
                                                     </TableCell>
                                                     <TableCell align="right">
+                                                        <Tooltip title="Editar">
+                                                            <IconButton size="small"
+                                                                onClick={() => openEditProcess(proc)}>
+                                                                <Edit fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
                                                         <Tooltip title="Eliminar">
                                                             <IconButton size="small" color="error"
                                                                 onClick={() => handleDeleteProcess(proc.process_id)}>
@@ -490,9 +525,9 @@ const AdminProjectDetail = () => {
                 </DialogActions>
             </Dialog>
 
-            {/* Add Process Dialog */}
-            <Dialog open={addProcessDialog} onClose={() => setAddProcessDialog(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Añadir Proceso</DialogTitle>
+            {/* Add/Edit Process Dialog */}
+            <Dialog open={addProcessDialog} onClose={() => { setAddProcessDialog(false); setEditingProcess(null) }} maxWidth="sm" fullWidth>
+                <DialogTitle>{editingProcess ? 'Editar Proceso' : 'Añadir Proceso'}</DialogTitle>
                 <DialogContent>
                     <Stack spacing={2} sx={{ mt: 1 }}>
                         <FormControl fullWidth>
@@ -529,12 +564,24 @@ const AdminProjectDetail = () => {
                                 onChange={(e) => setNewProcess({ ...newProcess, priority: parseInt(e.target.value) || 1 })}
                                 fullWidth inputProps={{ min: 1, max: 5 }} />
                         </Stack>
+                        {editingProcess && (
+                            <Stack direction="row" spacing={2}>
+                                <TextField label="Fecha inicio" type="datetime-local" value={newProcess.start_date}
+                                    onChange={(e) => setNewProcess({ ...newProcess, start_date: e.target.value })}
+                                    fullWidth InputLabelProps={{ shrink: true }} />
+                                <TextField label="Fecha fin" type="datetime-local" value={newProcess.end_date}
+                                    onChange={(e) => setNewProcess({ ...newProcess, end_date: e.target.value })}
+                                    fullWidth InputLabelProps={{ shrink: true }} />
+                            </Stack>
+                        )}
                     </Stack>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setAddProcessDialog(false)}>Cancelar</Button>
+                    <Button onClick={() => { setAddProcessDialog(false); setEditingProcess(null) }}>Cancelar</Button>
                     <Button variant="contained" onClick={handleAddProcess}
-                        disabled={!newProcess.process_type_id || !newProcess.name}>Añadir</Button>
+                        disabled={!newProcess.process_type_id || !newProcess.name}>
+                        {editingProcess ? 'Guardar' : 'Añadir'}
+                    </Button>
                 </DialogActions>
             </Dialog>
 
