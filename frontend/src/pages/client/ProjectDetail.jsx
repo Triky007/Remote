@@ -137,6 +137,30 @@ const ClientProjectDetail = () => {
                     )}
                 </Stack>
 
+                {/* Product Info */}
+                {project.product_info && Object.keys(project.product_info).length > 0 && (
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+                        {project.product_info.product && (
+                            <Chip label={`Producto: ${project.product_info.product}`} size="small" variant="outlined" />
+                        )}
+                        {project.product_info.copies > 0 && (
+                            <Chip label={`${project.product_info.copies} ej.`} size="small" variant="outlined" color="primary" />
+                        )}
+                        {project.product_info.size && (
+                            <Chip label={project.product_info.size} size="small" variant="outlined" />
+                        )}
+                        {project.product_info.colors && (
+                            <Chip label={`Colores: ${project.product_info.colors}`} size="small" variant="outlined" />
+                        )}
+                        {project.product_info.binding && project.product_info.binding !== 'none' && (
+                            <Chip label={`Enc: ${project.product_info.binding}`} size="small" variant="outlined" />
+                        )}
+                        {project.product_info.paper && (
+                            <Chip label={`Papel: ${project.product_info.paper}`} size="small" variant="outlined" />
+                        )}
+                    </Stack>
+                )}
+
                 <Grid container spacing={2}>
                     <Grid item xs={12} md={2}>
                         {/* Upload & PDFs */}

@@ -22,6 +22,7 @@ class CreateProjectRequest(BaseModel):
     description: str = ""
     client_user_id: str
     client_info: Optional[Dict[str, Any]] = None
+    product_info: Optional[Dict[str, Any]] = None
 
 
 class UpdateStatusRequest(BaseModel):
@@ -79,7 +80,8 @@ async def create_project(request: CreateProjectRequest, current_user: dict = Dep
         description=request.description,
         client_user_id=request.client_user_id,
         client_info=request.client_info,
-        created_by=current_user["user_id"]
+        created_by=current_user["user_id"],
+        product_info=request.product_info
     )
     return {"success": True, "project": project}
 

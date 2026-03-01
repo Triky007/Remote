@@ -67,8 +67,9 @@ class ProjectService:
         description: str,
         client_user_id: str,
         client_info: Optional[Dict[str, Any]] = None,
-        created_by: str = ""
-    ) -> Dict[str, Any]:
+        created_by: str = "",
+        product_info: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
         """Crea un nuevo proyecto"""
         project = {
             "project_id": str(uuid.uuid4()),
@@ -76,6 +77,7 @@ class ProjectService:
             "description": description,
             "client_user_id": client_user_id,
             "client_info": client_info or {},
+            "product_info": product_info or {},
             "status": "pending",
             "pdfs": [],
             "comments": [],

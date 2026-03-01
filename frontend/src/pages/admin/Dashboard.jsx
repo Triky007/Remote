@@ -36,7 +36,10 @@ const AdminDashboard = () => {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
     // Forms
-    const [newProject, setNewProject] = useState({ name: '', description: '', client_user_id: '' })
+    const [newProject, setNewProject] = useState({
+        name: '', description: '', client_user_id: '',
+        copies: '', product: '', size: 'A4', colors: '4/4', binding: 'none', paper: ''
+    })
     const [inviteData, setInviteData] = useState({ custom_message: '', expiry_hours: 72 })
     const [inviteResult, setInviteResult] = useState(null)
 
@@ -62,9 +65,24 @@ const AdminDashboard = () => {
 
     const handleCreateProject = async () => {
         try {
-            await api.post('/projects', newProject)
+            await api.post('/projects', {
+                name: newProject.name,
+                description: newProject.description,
+                client_user_id: newProject.client_user_id,
+                product_info: {
+                    copies: parseInt(newProject.copies) || 0,
+                    product: newProject.product,
+                    size: newProject.size,
+                    colors: newProject.colors,
+                    binding: newProject.binding,
+                    paper: newProject.paper,
+                }
+            })
             setProjectDialog(false)
-            setNewProject({ name: '', description: '', client_user_id: '' })
+            setNewProject({
+                name: '', description: '', client_user_id: '',
+                copies: '', product: '', size: 'A4', colors: '4/4', binding: 'none', paper: ''
+            })
             setSnackbar({ open: true, message: 'Proyecto creado', severity: 'success' })
             loadData()
         } catch (err) {
@@ -215,7 +233,6 @@ const AdminDashboard = () => {
 
             </Box>
 
-            {/* Create Project Dialog */}
             <Dialog open={projectDialog} onClose={() => setProjectDialog(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>Nuevo Proyecto</DialogTitle>
                 <DialogContent>
@@ -230,6 +247,59 @@ const AdminDashboard = () => {
                                 ))}
                             </Select>
                         </FormControl>
+
+                        <Divider sx={{ my: 1 }}><Typography variant="caption" color="text.secondary">Información del producto</Typography></Divider>
+
+                        <Stack direction="row" spacing={2}>
+                            <TextField label="Producto" value={newProject.product}
+                                onChange={(e) => setNewProject({ ...newProject, product: e.target.value })}
+                                fullWidth placeholder="Ej: Folleto, Libro, Tarjeta..." />
+                            <TextField label="Ejemplares" type="number" value={newProject.copies}
+                                onChange={(e) => setNewProject({ ...newProject, copies: e.target.value })}
+                                sx={{ minWidth: 120 }} inputProps={{ min: 1 }} />
+                        </Stack>
+                        <Stack direction="row" spacing={2}>
+                            <FormControl fullWidth>
+                                <InputLabel>Tamaño</InputLabel>
+                                <Select value={newProject.size} label="Tamaño"
+                                    onChange={(e) => setNewProject({ ...newProject, size: e.target.value })}>
+                                    <MenuItem value="A5">A5 (148×210 mm)</MenuItem>
+                                    <MenuItem value="A4">A4 (210×297 mm)</MenuItem>
+                                    <MenuItem value="A3">A3 (297×420 mm)</MenuItem>
+                                    <MenuItem value="A2">A2 (420×594 mm)</MenuItem>
+                                    <MenuItem value="Carta">Carta (216×279 mm)</MenuItem>
+                                    <MenuItem value="Personalizado">Personalizado</MenuItem>
+                                </Select>
+                            </FormControl>
+                            <FormControl fullWidth>
+                                <InputLabel>Colores</InputLabel>
+                                <Select value={newProject.colors} label="Colores"
+                                    onChange={(e) => setNewProject({ ...newProject, colors: e.target.value })}>
+                                    <MenuItem value="4/4">4/4 (Color ambas caras)</MenuItem>
+                                    <MenuItem value="4/1">4/1 (Color / B&N)</MenuItem>
+                                    <MenuItem value="4/0">4/0 (Color una cara)</MenuItem>
+                                    <MenuItem value="1/1">1/1 (B&N ambas caras)</MenuItem>
+                                    <MenuItem value="1/0">1/0 (B&N una cara)</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Stack>
+                        <Stack direction="row" spacing={2}>
+                            <FormControl fullWidth>
+                                <InputLabel>Encuadernación</InputLabel>
+                                <Select value={newProject.binding} label="Encuadernación"
+                                    onChange={(e) => setNewProject({ ...newProject, binding: e.target.value })}>
+                                    <MenuItem value="none">Sin encuadernación</MenuItem>
+                                    <MenuItem value="stapled">Grapado</MenuItem>
+                                    <MenuItem value="perfect">Fresado (Hot-melt)</MenuItem>
+                                    <MenuItem value="sewn">Cosido</MenuItem>
+                                    <MenuItem value="spiral">Espiral</MenuItem>
+                                    <MenuItem value="wire-o">Wire-O</MenuItem>
+                                </Select>
+                            </FormControl>
+                            <TextField label="Papel" value={newProject.paper}
+                                onChange={(e) => setNewProject({ ...newProject, paper: e.target.value })}
+                                fullWidth placeholder="Ej: Estucado 135g" />
+                        </Stack>
                     </Stack>
                 </DialogContent>
                 <DialogActions>

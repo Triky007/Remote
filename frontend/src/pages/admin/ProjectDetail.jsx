@@ -285,7 +285,34 @@ const AdminProjectDetail = () => {
                     </Alert>
                 )}
 
-                {/* ═══ Processes Section ═══ */}
+                {/* ═══ Product Info Section ═══ */}
+                {project.product_info && Object.keys(project.product_info).length > 0 && (
+                    <Card sx={{ mb: 2 }}>
+                        <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                {project.product_info.product && (
+                                    <Chip label={`Producto: ${project.product_info.product}`} size="small" variant="outlined" />
+                                )}
+                                {project.product_info.copies > 0 && (
+                                    <Chip label={`${project.product_info.copies} ej.`} size="small" variant="outlined" color="primary" />
+                                )}
+                                {project.product_info.size && (
+                                    <Chip label={project.product_info.size} size="small" variant="outlined" />
+                                )}
+                                {project.product_info.colors && (
+                                    <Chip label={`Colores: ${project.product_info.colors}`} size="small" variant="outlined" />
+                                )}
+                                {project.product_info.binding && project.product_info.binding !== 'none' && (
+                                    <Chip label={`Enc: ${project.product_info.binding}`} size="small" variant="outlined" />
+                                )}
+                                {project.product_info.paper && (
+                                    <Chip label={`Papel: ${project.product_info.paper}`} size="small" variant="outlined" />
+                                )}
+                            </Stack>
+                        </CardContent>
+                    </Card>
+                )}
+
                 <Card sx={{ mb: 2 }}>
                     <CardContent>
                         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
