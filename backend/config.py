@@ -49,6 +49,13 @@ class Settings(BaseSettings):
     MIN_IMAGE_DPI: int = 149
     MIN_LINE_WIDTH_PT: float = 0.25
 
+    # XMF external service
+    XMF_SERVER_URL: str = os.getenv("XMF_SERVER_URL", "https://jdf-maker-back.triky.app")
+    XMF_AUTH_URL: str = os.getenv("XMF_AUTH_URL", "https://auth-service.triky.app/token")
+    XMF_AUTH_USERNAME: str = os.getenv("XMF_AUTH_USERNAME", "triky007@hotmail.com")
+    XMF_AUTH_PASSWORD: str = os.getenv("XMF_AUTH_PASSWORD", "Masketu.123$")
+    XMF_TEST_MODE: bool = os.getenv("XMF_TEST_MODE", "true").lower() == "true"
+
     class Config:
         env_file = ".env"
 

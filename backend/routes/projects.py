@@ -43,6 +43,7 @@ class AddProcessRequest(BaseModel):
     dependencies: Optional[List[str]] = None
     priority: int = 1
     notes: str = ""
+    fold_schemes: Optional[List[Dict[str, Any]]] = None
 
 
 class UpdateProcessRequest(BaseModel):
@@ -56,6 +57,7 @@ class UpdateProcessRequest(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     notes: Optional[str] = None
+    fold_schemes: Optional[List[Dict[str, Any]]] = None
 
 
 class UpdateProcessStatusRequest(BaseModel):
@@ -221,12 +223,21 @@ async def upload_pdf(
 
     file_size = len(file_content)
 
+    # Extract page count
+    page_count = 0
+    try:
+        from services.pdf_thumbnail_service import pdf_thumbnail_service
+        page_count = pdf_thumbnail_service.get_page_count(Path(filepath))
+    except Exception:
+        pass
+
     # Register in project
     pdf_entry = project_service.add_pdf(
         project_id=project_id,
         filename=safe_filename,
         original_filename=file.filename,
-        file_size=file_size
+        file_size=file_size,
+        page_count=page_count
     )
 
     return {
@@ -414,6 +425,7 @@ async def add_process(
         dependencies=request.dependencies,
         priority=request.priority,
         notes=request.notes,
+        fold_schemes=request.fold_schemes,
     )
     if not process:
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")

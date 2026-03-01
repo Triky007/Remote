@@ -114,7 +114,7 @@ class ProjectService:
             raise ValueError(f"Estado inválido: {new_status}")
         return self.update_project(project_id, {"status": new_status})
 
-    def add_pdf(self, project_id: str, filename: str, original_filename: str, file_size: int) -> Optional[Dict[str, Any]]:
+    def add_pdf(self, project_id: str, filename: str, original_filename: str, file_size: int, page_count: int = 0) -> Optional[Dict[str, Any]]:
         """Registra un PDF subido"""
         projects = self._load_projects()
         for i, p in enumerate(projects):
@@ -124,6 +124,7 @@ class ProjectService:
                     "filename": filename,
                     "original_filename": original_filename,
                     "file_size": file_size,
+                    "page_count": page_count,
                     "uploaded_at": datetime.now().isoformat(),
                     "preflight_status": "pending",
                     "preflight_result": None,
@@ -218,6 +219,7 @@ class ProjectService:
         dependencies: Optional[List[str]] = None,
         priority: int = 1,
         notes: str = "",
+        fold_schemes: Optional[List[Dict[str, Any]]] = None,
     ) -> Optional[Dict[str, Any]]:
         """Añade un proceso a un proyecto"""
         projects = self._load_projects()
@@ -237,6 +239,7 @@ class ProjectService:
                     "dependencies": dependencies or [],
                     "priority": priority,
                     "notes": notes,
+                    "fold_schemes": fold_schemes or [],
                     "created_at": datetime.now().isoformat(),
                     "updated_at": datetime.now().isoformat(),
                 }

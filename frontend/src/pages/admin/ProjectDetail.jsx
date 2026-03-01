@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/apiService'
 import PreflightResults from '../../components/PreflightResults'
 import PdfPreview from '../../components/PdfPreview'
+import XmfJsonViewer from '../../components/XmfJsonViewer'
 import {
     Box, Typography, Button, Card, CardContent, Grid, Chip, Stack,
     TextField, Alert, CircularProgress, Divider, IconButton,
@@ -13,7 +14,8 @@ import {
 import {
     ArrowBack, Upload, Search, Delete, Comment, Send, Description,
     CheckCircle, Warning, Error as ErrorIcon, Schedule, Add, Edit,
-    PlayArrow, Stop, PrecisionManufacturing, CalendarMonth, Gavel
+    PlayArrow, Stop, PrecisionManufacturing, CalendarMonth, Gavel,
+    PrintOutlined as PrintIcon
 } from '@mui/icons-material'
 
 const statusColors = {
@@ -54,7 +56,8 @@ const AdminProjectDetail = () => {
     const [processCatalog, setProcessCatalog] = useState([])
     const [addProcessDialog, setAddProcessDialog] = useState(false)
     const [editingProcess, setEditingProcess] = useState(null)
-    const [newProcess, setNewProcess] = useState({ process_type_id: '', name: '', machine_id: '', estimated_hours: 1, priority: 1, start_date: '', end_date: '' })
+    const [newProcess, setNewProcess] = useState({ process_type_id: '', name: '', machine_id: '', estimated_hours: 1, priority: 1, start_date: '', end_date: '', fold_schemes: [] })
+    const [showXmfViewer, setShowXmfViewer] = useState(false)
 
     // Edit project
     const [editProjectDialog, setEditProjectDialog] = useState(false)
@@ -165,6 +168,38 @@ const AdminProjectDetail = () => {
         }
     }
 
+    // Check if selected machine is offset
+    const selectedMachine = machines.find(m => m.machine_id === newProcess.machine_id)
+    const isOffsetMachine = selectedMachine?.type === 'offset'
+
+    // Check if project has offset processes (for XMF button)
+    const hasOffsetProcess = (project?.processes || []).some(proc => {
+        const m = machines.find(mm => mm.machine_id === proc.machine_id)
+        return m?.type === 'offset'
+    })
+
+    const handleAddFoldScheme = () => {
+        setNewProcess(prev => ({
+            ...prev,
+            fold_schemes: [...(prev.fold_schemes || []), { fold_catalog: 'F16', total_sheets: 1, is_duplex: false }]
+        }))
+    }
+
+    const handleUpdateFoldScheme = (index, field, value) => {
+        setNewProcess(prev => {
+            const schemes = [...(prev.fold_schemes || [])]
+            schemes[index] = { ...schemes[index], [field]: value }
+            return { ...prev, fold_schemes: schemes }
+        })
+    }
+
+    const handleRemoveFoldScheme = (index) => {
+        setNewProcess(prev => ({
+            ...prev,
+            fold_schemes: (prev.fold_schemes || []).filter((_, i) => i !== index)
+        }))
+    }
+
     const handleAddProcess = async () => {
         try {
             if (editingProcess) {
@@ -176,6 +211,7 @@ const AdminProjectDetail = () => {
                     priority: parseInt(newProcess.priority) || 1,
                     start_date: newProcess.start_date || null,
                     end_date: newProcess.end_date || null,
+                    fold_schemes: newProcess.fold_schemes || [],
                 })
                 setSnackbar({ open: true, message: 'Proceso actualizado', severity: 'success' })
             } else {
@@ -189,7 +225,7 @@ const AdminProjectDetail = () => {
             }
             setAddProcessDialog(false)
             setEditingProcess(null)
-            setNewProcess({ process_type_id: '', name: '', machine_id: '', estimated_hours: 1, priority: 1, start_date: '', end_date: '' })
+            setNewProcess({ process_type_id: '', name: '', machine_id: '', estimated_hours: 1, priority: 1, start_date: '', end_date: '', fold_schemes: [] })
             loadProject()
         } catch (err) {
             setSnackbar({ open: true, message: err.response?.data?.detail || 'Error', severity: 'error' })
@@ -206,6 +242,7 @@ const AdminProjectDetail = () => {
             priority: proc.priority || 1,
             start_date: proc.start_date ? proc.start_date.slice(0, 16) : '',
             end_date: proc.end_date ? proc.end_date.slice(0, 16) : '',
+            fold_schemes: proc.fold_schemes || [],
         })
         setAddProcessDialog(true)
     }
@@ -342,6 +379,13 @@ const AdminProjectDetail = () => {
                             }}
                             sx={{ fontWeight: 700, px: 3 }}>
                             Aprobar Producción
+                        </Button>
+                    )}
+                    {project.status === 'approved' && hasOffsetProcess && (
+                        <Button variant="contained" color="warning" startIcon={<PrintIcon />}
+                            onClick={() => setShowXmfViewer(true)}
+                            sx={{ fontWeight: 700, px: 3 }}>
+                            Enviar a XMF
                         </Button>
                     )}
                 </Stack>
@@ -671,6 +715,39 @@ const AdminProjectDetail = () => {
                                     fullWidth InputLabelProps={{ shrink: true }} />
                             </Stack>
                         )}
+                        {/* Fold schemes — only for offset machines */}
+                        {isOffsetMachine && (
+                            <Box>
+                                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Esquemas de plegado</Typography>
+                                    <Button size="small" startIcon={<Add />} onClick={handleAddFoldScheme}>Añadir</Button>
+                                </Stack>
+                                {(newProcess.fold_schemes || []).length === 0 && (
+                                    <Typography variant="caption" color="text.secondary">Sin esquemas — se usará F16 por defecto</Typography>
+                                )}
+                                {(newProcess.fold_schemes || []).map((scheme, idx) => (
+                                    <Stack key={idx} direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                                        <TextField size="small" label="Esquema" value={scheme.fold_catalog}
+                                            onChange={(e) => handleUpdateFoldScheme(idx, 'fold_catalog', e.target.value)}
+                                            sx={{ flex: 1 }} placeholder="F16-7" />
+                                        <TextField size="small" label="Pliegos" type="number" value={scheme.total_sheets}
+                                            onChange={(e) => handleUpdateFoldScheme(idx, 'total_sheets', parseInt(e.target.value) || 1)}
+                                            sx={{ width: 90 }} inputProps={{ min: 1 }} />
+                                        <FormControl size="small" sx={{ minWidth: 130 }}>
+                                            <InputLabel>Trabajo</InputLabel>
+                                            <Select value={scheme.is_duplex ? 'duplex' : 'normal'} label="Trabajo"
+                                                onChange={(e) => handleUpdateFoldScheme(idx, 'is_duplex', e.target.value === 'duplex')}>
+                                                <MenuItem value="normal">Retiración</MenuItem>
+                                                <MenuItem value="duplex">Tira y retira</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                        <IconButton size="small" color="error" onClick={() => handleRemoveFoldScheme(idx)}>
+                                            <Delete fontSize="small" />
+                                        </IconButton>
+                                    </Stack>
+                                ))}
+                            </Box>
+                        )}
                     </Stack>
                 </DialogContent>
                 <DialogActions>
@@ -761,6 +838,11 @@ const AdminProjectDetail = () => {
                     <Button variant="contained" onClick={handleSaveProject} disabled={!editProject.name}>Guardar</Button>
                 </DialogActions>
             </Dialog>
+
+            {/* XMF JSON Viewer Modal */}
+            {showXmfViewer && (
+                <XmfJsonViewer projectId={projectId} onClose={() => setShowXmfViewer(false)} />
+            )}
 
             <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
