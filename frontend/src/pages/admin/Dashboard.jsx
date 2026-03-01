@@ -38,7 +38,7 @@ const AdminDashboard = () => {
     // Forms
     const [newProject, setNewProject] = useState({
         name: '', description: '', client_user_id: '',
-        copies: '', product: '', size: 'A4', colors: '4/4', binding: 'none', paper: ''
+        copies: '', product: '', size: 'A4', colors: '4/4', binding: 'none', paper: '', pages: '', paper_size: 'A4'
     })
     const [inviteData, setInviteData] = useState({ custom_message: '', expiry_hours: 72 })
     const [inviteResult, setInviteResult] = useState(null)
@@ -71,17 +71,19 @@ const AdminDashboard = () => {
                 client_user_id: newProject.client_user_id,
                 product_info: {
                     copies: parseInt(newProject.copies) || 0,
+                    pages: parseInt(newProject.pages) || 0,
                     product: newProject.product,
                     size: newProject.size,
                     colors: newProject.colors,
                     binding: newProject.binding,
                     paper: newProject.paper,
+                    paper_size: newProject.paper_size,
                 }
             })
             setProjectDialog(false)
             setNewProject({
                 name: '', description: '', client_user_id: '',
-                copies: '', product: '', size: 'A4', colors: '4/4', binding: 'none', paper: ''
+                copies: '', product: '', size: 'A4', colors: '4/4', binding: 'none', paper: '', pages: '', paper_size: 'A4'
             })
             setSnackbar({ open: true, message: 'Proyecto creado', severity: 'success' })
             loadData()
@@ -257,6 +259,9 @@ const AdminDashboard = () => {
                             <TextField label="Ejemplares" type="number" value={newProject.copies}
                                 onChange={(e) => setNewProject({ ...newProject, copies: e.target.value })}
                                 sx={{ minWidth: 120 }} inputProps={{ min: 1 }} />
+                            <TextField label="Páginas" type="number" value={newProject.pages}
+                                onChange={(e) => setNewProject({ ...newProject, pages: e.target.value })}
+                                sx={{ minWidth: 100 }} inputProps={{ min: 1 }} />
                         </Stack>
                         <Stack direction="row" spacing={2}>
                             <FormControl fullWidth>
@@ -299,6 +304,20 @@ const AdminDashboard = () => {
                             <TextField label="Papel" value={newProject.paper}
                                 onChange={(e) => setNewProject({ ...newProject, paper: e.target.value })}
                                 fullWidth placeholder="Ej: Estucado 135g" />
+                            <FormControl sx={{ minWidth: 150 }}>
+                                <InputLabel>Tamaño papel</InputLabel>
+                                <Select value={newProject.paper_size} label="Tamaño papel"
+                                    onChange={(e) => setNewProject({ ...newProject, paper_size: e.target.value })}>
+                                    <MenuItem value="A5">A5</MenuItem>
+                                    <MenuItem value="A4">A4</MenuItem>
+                                    <MenuItem value="A3">A3</MenuItem>
+                                    <MenuItem value="SRA3">SRA3</MenuItem>
+                                    <MenuItem value="A2">A2</MenuItem>
+                                    <MenuItem value="SRA2">SRA2</MenuItem>
+                                    <MenuItem value="70x100">70×100</MenuItem>
+                                    <MenuItem value="Personalizado">Personalizado</MenuItem>
+                                </Select>
+                            </FormControl>
                         </Stack>
                     </Stack>
                 </DialogContent>

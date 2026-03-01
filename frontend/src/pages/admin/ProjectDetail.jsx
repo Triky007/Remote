@@ -56,6 +56,10 @@ const AdminProjectDetail = () => {
     const [editingProcess, setEditingProcess] = useState(null)
     const [newProcess, setNewProcess] = useState({ process_type_id: '', name: '', machine_id: '', estimated_hours: 1, priority: 1, start_date: '', end_date: '' })
 
+    // Edit project
+    const [editProjectDialog, setEditProjectDialog] = useState(false)
+    const [editProject, setEditProject] = useState({ name: '', description: '', product: '', copies: '', pages: '', size: 'A4', colors: '4/4', binding: 'none', paper: '', paper_size: 'A4' })
+
     const loadProject = useCallback(async () => {
         try {
             const [projRes, machRes, catRes] = await Promise.all([
@@ -168,8 +172,8 @@ const AdminProjectDetail = () => {
                     name: newProcess.name,
                     process_type_id: newProcess.process_type_id,
                     machine_id: newProcess.machine_id || null,
-                    estimated_hours: newProcess.estimated_hours,
-                    priority: newProcess.priority,
+                    estimated_hours: parseFloat(newProcess.estimated_hours) || 1,
+                    priority: parseInt(newProcess.priority) || 1,
                     start_date: newProcess.start_date || null,
                     end_date: newProcess.end_date || null,
                 })
@@ -178,6 +182,8 @@ const AdminProjectDetail = () => {
                 await api.post(`/projects/${projectId}/processes`, {
                     ...newProcess,
                     machine_id: newProcess.machine_id || null,
+                    estimated_hours: parseFloat(newProcess.estimated_hours) || 1,
+                    priority: parseInt(newProcess.priority) || 1,
                 })
                 setSnackbar({ open: true, message: 'Proceso añadido', severity: 'success' })
             }
@@ -234,6 +240,47 @@ const AdminProjectDetail = () => {
         }
     }
 
+    const openEditProject = () => {
+        const pi = project.product_info || {}
+        setEditProject({
+            name: project.name || '',
+            description: project.description || '',
+            product: pi.product || '',
+            copies: pi.copies || '',
+            pages: pi.pages || '',
+            size: pi.size || 'A4',
+            colors: pi.colors || '4/4',
+            binding: pi.binding || 'none',
+            paper: pi.paper || '',
+            paper_size: pi.paper_size || 'A4',
+        })
+        setEditProjectDialog(true)
+    }
+
+    const handleSaveProject = async () => {
+        try {
+            await api.put(`/projects/${projectId}`, {
+                name: editProject.name,
+                description: editProject.description,
+                product_info: {
+                    product: editProject.product,
+                    copies: parseInt(editProject.copies) || 0,
+                    pages: parseInt(editProject.pages) || 0,
+                    size: editProject.size,
+                    colors: editProject.colors,
+                    binding: editProject.binding,
+                    paper: editProject.paper,
+                    paper_size: editProject.paper_size,
+                }
+            })
+            setEditProjectDialog(false)
+            setSnackbar({ open: true, message: 'Proyecto actualizado', severity: 'success' })
+            loadProject()
+        } catch (err) {
+            setSnackbar({ open: true, message: 'Error al actualizar', severity: 'error' })
+        }
+    }
+
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>
@@ -259,6 +306,11 @@ const AdminProjectDetail = () => {
                         <Typography variant="h5" sx={{ fontWeight: 700 }}>{project.name}</Typography>
                         <Typography variant="body2" color="text.secondary">{project.description}</Typography>
                     </Box>
+                    <Tooltip title="Editar proyecto">
+                        <IconButton onClick={openEditProject}>
+                            <Edit />
+                        </IconButton>
+                    </Tooltip>
                     <Tooltip title="Eliminar proyecto">
                         <IconButton color="error" onClick={handleDeleteProject}>
                             <Delete />
@@ -311,6 +363,9 @@ const AdminProjectDetail = () => {
                                 {project.product_info.copies > 0 && (
                                     <Chip label={`${project.product_info.copies} ej.`} size="small" variant="outlined" color="primary" />
                                 )}
+                                {project.product_info.pages > 0 && (
+                                    <Chip label={`${project.product_info.pages} pág.`} size="small" variant="outlined" color="secondary" />
+                                )}
                                 {project.product_info.size && (
                                     <Chip label={project.product_info.size} size="small" variant="outlined" />
                                 )}
@@ -321,7 +376,7 @@ const AdminProjectDetail = () => {
                                     <Chip label={`Enc: ${project.product_info.binding}`} size="small" variant="outlined" />
                                 )}
                                 {project.product_info.paper && (
-                                    <Chip label={`Papel: ${project.product_info.paper}`} size="small" variant="outlined" />
+                                    <Chip label={`Papel: ${project.product_info.paper}${project.product_info.paper_size ? ' (' + project.product_info.paper_size + ')' : ''}`} size="small" variant="outlined" />
                                 )}
                             </Stack>
                         </CardContent>
@@ -600,10 +655,10 @@ const AdminProjectDetail = () => {
                         </FormControl>
                         <Stack direction="row" spacing={2}>
                             <TextField label="Horas estimadas" type="number" value={newProcess.estimated_hours}
-                                onChange={(e) => setNewProcess({ ...newProcess, estimated_hours: parseFloat(e.target.value) || 1 })}
+                                onChange={(e) => setNewProcess({ ...newProcess, estimated_hours: e.target.value })}
                                 fullWidth inputProps={{ min: 0.25, step: 0.25 }} />
                             <TextField label="Prioridad (1-5)" type="number" value={newProcess.priority}
-                                onChange={(e) => setNewProcess({ ...newProcess, priority: parseInt(e.target.value) || 1 })}
+                                onChange={(e) => setNewProcess({ ...newProcess, priority: e.target.value })}
                                 fullWidth inputProps={{ min: 1, max: 5 }} />
                         </Stack>
                         {editingProcess && (
@@ -624,6 +679,86 @@ const AdminProjectDetail = () => {
                         disabled={!newProcess.process_type_id || !newProcess.name}>
                         {editingProcess ? 'Guardar' : 'Añadir'}
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Edit Project Dialog */}
+            <Dialog open={editProjectDialog} onClose={() => setEditProjectDialog(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Editar Proyecto</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                        <TextField label="Nombre" value={editProject.name}
+                            onChange={(e) => setEditProject({ ...editProject, name: e.target.value })} fullWidth />
+                        <TextField label="Descripción" value={editProject.description}
+                            onChange={(e) => setEditProject({ ...editProject, description: e.target.value })} fullWidth multiline rows={2} />
+                        <Stack direction="row" spacing={2}>
+                            <TextField label="Producto" value={editProject.product}
+                                onChange={(e) => setEditProject({ ...editProject, product: e.target.value })} fullWidth />
+                            <TextField label="Ejemplares" type="number" value={editProject.copies}
+                                onChange={(e) => setEditProject({ ...editProject, copies: e.target.value })} sx={{ minWidth: 110 }} />
+                            <TextField label="Páginas" type="number" value={editProject.pages}
+                                onChange={(e) => setEditProject({ ...editProject, pages: e.target.value })} sx={{ minWidth: 100 }} />
+                        </Stack>
+                        <Stack direction="row" spacing={2}>
+                            <FormControl fullWidth>
+                                <InputLabel>Tamaño</InputLabel>
+                                <Select value={editProject.size} label="Tamaño"
+                                    onChange={(e) => setEditProject({ ...editProject, size: e.target.value })}>
+                                    <MenuItem value="A5">A5</MenuItem>
+                                    <MenuItem value="A4">A4</MenuItem>
+                                    <MenuItem value="A3">A3</MenuItem>
+                                    <MenuItem value="A2">A2</MenuItem>
+                                    <MenuItem value="Carta">Carta</MenuItem>
+                                    <MenuItem value="Personalizado">Personalizado</MenuItem>
+                                </Select>
+                            </FormControl>
+                            <FormControl fullWidth>
+                                <InputLabel>Colores</InputLabel>
+                                <Select value={editProject.colors} label="Colores"
+                                    onChange={(e) => setEditProject({ ...editProject, colors: e.target.value })}>
+                                    <MenuItem value="4/4">4/4</MenuItem>
+                                    <MenuItem value="4/1">4/1</MenuItem>
+                                    <MenuItem value="4/0">4/0</MenuItem>
+                                    <MenuItem value="1/1">1/1</MenuItem>
+                                    <MenuItem value="1/0">1/0</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Stack>
+                        <Stack direction="row" spacing={2}>
+                            <FormControl fullWidth>
+                                <InputLabel>Encuadernación</InputLabel>
+                                <Select value={editProject.binding} label="Encuadernación"
+                                    onChange={(e) => setEditProject({ ...editProject, binding: e.target.value })}>
+                                    <MenuItem value="none">Sin encuadernación</MenuItem>
+                                    <MenuItem value="stapled">Grapado</MenuItem>
+                                    <MenuItem value="perfect">Fresado</MenuItem>
+                                    <MenuItem value="sewn">Cosido</MenuItem>
+                                    <MenuItem value="spiral">Espiral</MenuItem>
+                                    <MenuItem value="wire-o">Wire-O</MenuItem>
+                                </Select>
+                            </FormControl>
+                            <TextField label="Papel" value={editProject.paper}
+                                onChange={(e) => setEditProject({ ...editProject, paper: e.target.value })} fullWidth />
+                            <FormControl sx={{ minWidth: 120 }}>
+                                <InputLabel>Tam. papel</InputLabel>
+                                <Select value={editProject.paper_size} label="Tam. papel"
+                                    onChange={(e) => setEditProject({ ...editProject, paper_size: e.target.value })}>
+                                    <MenuItem value="A5">A5</MenuItem>
+                                    <MenuItem value="A4">A4</MenuItem>
+                                    <MenuItem value="A3">A3</MenuItem>
+                                    <MenuItem value="SRA3">SRA3</MenuItem>
+                                    <MenuItem value="A2">A2</MenuItem>
+                                    <MenuItem value="SRA2">SRA2</MenuItem>
+                                    <MenuItem value="70x100">70×100</MenuItem>
+                                    <MenuItem value="Personalizado">Personalizado</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Stack>
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditProjectDialog(false)}>Cancelar</Button>
+                    <Button variant="contained" onClick={handleSaveProject} disabled={!editProject.name}>Guardar</Button>
                 </DialogActions>
             </Dialog>
 

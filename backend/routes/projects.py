@@ -100,6 +100,23 @@ async def get_project(project_id: str, current_user: dict = Depends(get_current_
     return project
 
 
+class UpdateProjectRequest(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    product_info: Optional[Dict[str, Any]] = None
+
+
+@router.put("/{project_id}")
+async def update_project(project_id: str, request: UpdateProjectRequest, current_user: dict = Depends(get_current_admin)):
+    """Actualiza info del proyecto (solo admin)"""
+    update_data = {k: v for k, v in request.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No hay datos para actualizar")
+    project = project_service.update_project(project_id, update_data)
+    if not project:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+    return {"success": True, "project": project}
+
 @router.put("/{project_id}/status")
 async def update_project_status(
     project_id: str,

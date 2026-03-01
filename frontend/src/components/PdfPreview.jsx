@@ -67,7 +67,7 @@ const PdfPreview = ({ projectId, filename }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [pageCache, setPageCache] = useState({});
-    const [viewMode, setViewMode] = useState('book'); // 'single' | 'book'
+    const [viewMode, setViewMode] = useState('single'); // 'single' | 'book'
     const [flipping, setFlipping] = useState(null); // 'next' | 'prev' | null
     const flipTimeoutRef = useRef(null);
 

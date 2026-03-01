@@ -146,6 +146,9 @@ const ClientProjectDetail = () => {
                         {project.product_info.copies > 0 && (
                             <Chip label={`${project.product_info.copies} ej.`} size="small" variant="outlined" color="primary" />
                         )}
+                        {project.product_info.pages > 0 && (
+                            <Chip label={`${project.product_info.pages} pág.`} size="small" variant="outlined" color="secondary" />
+                        )}
                         {project.product_info.size && (
                             <Chip label={project.product_info.size} size="small" variant="outlined" />
                         )}
@@ -156,7 +159,7 @@ const ClientProjectDetail = () => {
                             <Chip label={`Enc: ${project.product_info.binding}`} size="small" variant="outlined" />
                         )}
                         {project.product_info.paper && (
-                            <Chip label={`Papel: ${project.product_info.paper}`} size="small" variant="outlined" />
+                            <Chip label={`Papel: ${project.product_info.paper}${project.product_info.paper_size ? ' (' + project.product_info.paper_size + ')' : ''}`} size="small" variant="outlined" />
                         )}
                     </Stack>
                 )}
