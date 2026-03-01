@@ -13,7 +13,7 @@ import {
 import {
     ArrowBack, Upload, Search, Delete, Comment, Send, Description,
     CheckCircle, Warning, Error as ErrorIcon, Schedule, Add,
-    PlayArrow, Stop, PrecisionManufacturing
+    PlayArrow, Stop, PrecisionManufacturing, CalendarMonth
 } from '@mui/icons-material'
 
 const statusColors = {
@@ -226,6 +226,13 @@ const AdminProjectDetail = () => {
                         onClick={() => { setNewStatus(project.status); setStatusDialog(true) }}
                         sx={{ cursor: 'pointer', fontWeight: 600 }}
                     />
+                    {project.delivery_deadline && (
+                        <Chip
+                            icon={<CalendarMonth />}
+                            label={`Entrega: ${new Date(project.delivery_deadline).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}`}
+                            variant="outlined" color="warning" sx={{ fontWeight: 600 }}
+                        />
+                    )}
                 </Stack>
 
                 {/* ═══ Processes Section ═══ */}
@@ -251,6 +258,8 @@ const AdminProjectDetail = () => {
                                             <TableCell>Proceso</TableCell>
                                             <TableCell>Máquina</TableCell>
                                             <TableCell>Horas est.</TableCell>
+                                            <TableCell>Inicio</TableCell>
+                                            <TableCell>Fin</TableCell>
                                             <TableCell>Prioridad</TableCell>
                                             <TableCell>Estado</TableCell>
                                             <TableCell align="right">Acciones</TableCell>
@@ -274,6 +283,16 @@ const AdminProjectDetail = () => {
                                                         </Typography>
                                                     </TableCell>
                                                     <TableCell>{proc.estimated_hours}h</TableCell>
+                                                    <TableCell>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            {proc.start_date ? new Date(proc.start_date).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                        </Typography>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            {proc.end_date ? new Date(proc.end_date).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                        </Typography>
+                                                    </TableCell>
                                                     <TableCell>
                                                         <Chip label={proc.priority} size="small" variant="outlined"
                                                             color={proc.priority >= 4 ? 'error' : proc.priority >= 3 ? 'warning' : 'default'} />

@@ -104,11 +104,29 @@ async def update_project_status(
     request: UpdateStatusRequest,
     current_user: dict = Depends(get_current_admin)
 ):
-    """Cambia estado de un proyecto (solo admin)"""
+    """Cambia estado de un proyecto (solo admin). Si pasa a 'approved', auto-planifica."""
     try:
-        project = project_service.update_status(project_id, request.status)
+        # Obtener estado actual antes de actualizar
+        existing = project_service.get_project_by_id(project_id)
+        if not existing:
+            raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+        old_status = existing.get("status")
+        new_status = request.status
+
+        project = project_service.update_status(project_id, new_status)
         if not project:
             raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+        # Trigger auto-scheduling cuando pasa a 'approved'
+        if new_status == "approved" and old_status != "approved":
+            try:
+                from services.planning_service import schedule_project_processes
+                project = schedule_project_processes(project_id)
+                print(f"✅ Proyecto {project_id} aprobado y planificado automáticamente")
+            except Exception as plan_err:
+                print(f"⚠️ Error planificando proyecto: {plan_err}")
+
         return {"success": True, "project": project}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

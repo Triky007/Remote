@@ -10,7 +10,8 @@ import {
 } from '@mui/material'
 import {
     Add, Logout, Person, FolderOpen, Email, ContentCopy,
-    CheckCircle, Warning, Error as ErrorIcon, Schedule, PersonAdd, Settings
+    CheckCircle, Warning, Error as ErrorIcon, Schedule, Settings,
+    AdminPanelSettings
 } from '@mui/icons-material'
 
 const statusColors = {
@@ -30,14 +31,12 @@ const AdminDashboard = () => {
 
     // Dialogs
     const [projectDialog, setProjectDialog] = useState(false)
-    const [userDialog, setUserDialog] = useState(false)
     const [inviteDialog, setInviteDialog] = useState(false)
     const [inviteUserId, setInviteUserId] = useState('')
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
     // Forms
     const [newProject, setNewProject] = useState({ name: '', description: '', client_user_id: '' })
-    const [newUser, setNewUser] = useState({ username: '', password: '', email: '', full_name: '' })
     const [inviteData, setInviteData] = useState({ custom_message: '', expiry_hours: 72 })
     const [inviteResult, setInviteResult] = useState(null)
 
@@ -67,18 +66,6 @@ const AdminDashboard = () => {
             setProjectDialog(false)
             setNewProject({ name: '', description: '', client_user_id: '' })
             setSnackbar({ open: true, message: 'Proyecto creado', severity: 'success' })
-            loadData()
-        } catch (err) {
-            setSnackbar({ open: true, message: err.response?.data?.detail || 'Error', severity: 'error' })
-        }
-    }
-
-    const handleCreateUser = async () => {
-        try {
-            await api.post('/clients', { ...newUser, role: 'client' })
-            setUserDialog(false)
-            setNewUser({ username: '', password: '', email: '', full_name: '' })
-            setSnackbar({ open: true, message: 'Cliente creado', severity: 'success' })
             loadData()
         } catch (err) {
             setSnackbar({ open: true, message: err.response?.data?.detail || 'Error', severity: 'error' })
@@ -125,6 +112,9 @@ const AdminDashboard = () => {
                             <Typography variant="body2">{user?.full_name || user?.username}</Typography>
                         </MenuItem>
                         <Divider />
+                        <MenuItem onClick={() => { setAnchorEl(null); navigate('/admin/users') }}>
+                            <AdminPanelSettings sx={{ mr: 1 }} fontSize="small" /> Gestionar Admins
+                        </MenuItem>
                         <MenuItem onClick={() => { logout(); navigate('/login') }}>
                             <Logout sx={{ mr: 1 }} fontSize="small" /> Cerrar sesión
                         </MenuItem>
@@ -171,9 +161,6 @@ const AdminDashboard = () => {
                     <Button variant="contained" startIcon={<Add />} onClick={() => setProjectDialog(true)}>
                         Nuevo Proyecto
                     </Button>
-                    <Button variant="outlined" startIcon={<PersonAdd />} onClick={() => setUserDialog(true)}>
-                        Nuevo Cliente
-                    </Button>
                     <Button variant="outlined" startIcon={<Settings />} onClick={() => navigate('/admin/catalogs')}
                         color="secondary">
                         Catálogos
@@ -219,36 +206,8 @@ const AdminDashboard = () => {
                     )}
                 </Grid>
 
-                {/* Clients section */}
-                <Typography variant="h5" sx={{ mb: 2, mt: 4, fontWeight: 600 }}>Clientes</Typography>
-                <Grid container spacing={2}>
-                    {clients.map((client) => (
-                        <Grid item xs={12} sm={6} md={4} key={client.user_id}>
-                            <Card>
-                                <CardContent>
-                                    <Stack direction="row" alignItems="center" spacing={2}>
-                                        <Avatar sx={{ bgcolor: '#1e3a5f' }}>{(client.full_name || client.username)[0].toUpperCase()}</Avatar>
-                                        <Box>
-                                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{client.full_name || client.username}</Typography>
-                                            <Typography variant="body2" color="text.secondary">{client.email || 'Sin email'}</Typography>
-                                        </Box>
-                                    </Stack>
-                                </CardContent>
-                                <CardActions>
-                                    <Tooltip title="Enviar invitación">
-                                        <IconButton size="small" onClick={() => {
-                                            setInviteUserId(client.user_id)
-                                            setInviteResult(null)
-                                            setInviteDialog(true)
-                                        }}>
-                                            <Email />
-                                        </IconButton>
-                                    </Tooltip>
-                                </CardActions>
-                            </Card>
-                        </Grid>
-                    ))}
-                </Grid>
+
+
             </Box>
 
             {/* Create Project Dialog */}
@@ -274,22 +233,6 @@ const AdminDashboard = () => {
                 </DialogActions>
             </Dialog>
 
-            {/* Create User Dialog */}
-            <Dialog open={userDialog} onClose={() => setUserDialog(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Nuevo Cliente</DialogTitle>
-                <DialogContent>
-                    <Stack spacing={2} sx={{ mt: 1 }}>
-                        <TextField label="Nombre completo" value={newUser.full_name} onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })} fullWidth />
-                        <TextField label="Usuario" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} fullWidth />
-                        <TextField label="Email" type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} fullWidth />
-                        <TextField label="Contraseña" type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} fullWidth />
-                    </Stack>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setUserDialog(false)}>Cancelar</Button>
-                    <Button variant="contained" onClick={handleCreateUser} disabled={!newUser.username || !newUser.password}>Crear</Button>
-                </DialogActions>
-            </Dialog>
 
             {/* Invite Dialog */}
             <Dialog open={inviteDialog} onClose={() => { setInviteDialog(false); setInviteResult(null) }} maxWidth="sm" fullWidth>

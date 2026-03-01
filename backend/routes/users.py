@@ -57,6 +57,25 @@ async def create_user(request: CreateUserRequest, current_user: dict = Depends(g
         raise HTTPException(status_code=400, detail=str(e))
 
 
+class UpdateUserRequest(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
+
+
+@router.put("/{user_id}")
+async def update_user(user_id: str, request: UpdateUserRequest, current_user: dict = Depends(get_current_admin)):
+    """Actualiza un usuario admin"""
+    update_data = request.model_dump(exclude_none=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No hay datos para actualizar")
+
+    updated = user_service.update_user(user_id, update_data)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return {"success": True, "user": updated}
+
+
 @router.delete("/{user_id}")
 async def delete_user(user_id: str, current_user: dict = Depends(get_current_admin)):
     """Elimina un usuario"""

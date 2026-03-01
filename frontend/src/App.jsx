@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminProjectDetail from './pages/admin/ProjectDetail'
 import AdminCatalogPage from './pages/admin/CatalogPage'
+import AdminUsersPage from './pages/admin/AdminUsersPage'
 import ClientDashboard from './pages/client/Dashboard'
 import ClientProjectDetail from './pages/client/ProjectDetail'
 
@@ -34,6 +35,9 @@ const App = () => {
             } />
             <Route path="/admin/catalogs" element={
                 <ProtectedRoute requiredRole="admin"><AdminCatalogPage /></ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+                <ProtectedRoute requiredRole="admin"><AdminUsersPage /></ProtectedRoute>
             } />
 
             {/* Client routes */}
