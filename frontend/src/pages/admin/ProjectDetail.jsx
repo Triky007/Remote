@@ -224,6 +224,16 @@ const AdminProjectDetail = () => {
         }
     }
 
+    const handleDeleteProject = async () => {
+        if (!window.confirm('¿Eliminar este proyecto? Esta acción no se puede deshacer.')) return
+        try {
+            await api.delete(`/projects/${projectId}`)
+            navigate('/admin')
+        } catch (err) {
+            setSnackbar({ open: true, message: 'Error al eliminar proyecto', severity: 'error' })
+        }
+    }
+
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>
@@ -249,6 +259,11 @@ const AdminProjectDetail = () => {
                         <Typography variant="h5" sx={{ fontWeight: 700 }}>{project.name}</Typography>
                         <Typography variant="body2" color="text.secondary">{project.description}</Typography>
                     </Box>
+                    <Tooltip title="Eliminar proyecto">
+                        <IconButton color="error" onClick={handleDeleteProject}>
+                            <Delete />
+                        </IconButton>
+                    </Tooltip>
                     <Chip
                         label={statusLabels[project.status] || project.status}
                         color={statusColors[project.status] || 'default'}
