@@ -11,7 +11,7 @@ import {
 import {
     Add, Logout, Person, FolderOpen, Email, ContentCopy,
     CheckCircle, Warning, Error as ErrorIcon, Schedule, Settings,
-    AdminPanelSettings
+    AdminPanelSettings, CalendarViewWeek
 } from '@mui/icons-material'
 
 const statusColors = {
@@ -160,6 +160,11 @@ const AdminDashboard = () => {
                 <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
                     <Button variant="contained" startIcon={<Add />} onClick={() => setProjectDialog(true)}>
                         Nuevo Proyecto
+                    </Button>
+                    <Button variant="contained" startIcon={<CalendarViewWeek />}
+                        onClick={() => navigate('/admin/planning')}
+                        sx={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)' }}>
+                        Planificación
                     </Button>
                     <Button variant="outlined" startIcon={<Settings />} onClick={() => navigate('/admin/catalogs')}
                         color="secondary">

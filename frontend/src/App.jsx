@@ -8,6 +8,7 @@ import AdminDashboard from './pages/admin/Dashboard'
 import AdminProjectDetail from './pages/admin/ProjectDetail'
 import AdminCatalogPage from './pages/admin/CatalogPage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
+import PlanningPage from './pages/admin/PlanningPage'
 import ClientDashboard from './pages/client/Dashboard'
 import ClientProjectDetail from './pages/client/ProjectDetail'
 
@@ -38,6 +39,9 @@ const App = () => {
             } />
             <Route path="/admin/users" element={
                 <ProtectedRoute requiredRole="admin"><AdminUsersPage /></ProtectedRoute>
+            } />
+            <Route path="/admin/planning" element={
+                <ProtectedRoute requiredRole="admin"><PlanningPage /></ProtectedRoute>
             } />
 
             {/* Client routes */}
