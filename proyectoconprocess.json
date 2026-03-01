@@ -1,0 +1,41 @@
+{
+    "name": "Catalogo primavera 2024",
+    "description": "Catálogo 40 páginas a color",
+    "client_user_id": "juan",
+    "client_info": {
+        "company_name": "juan sl",
+        "email": "juan@juan.co"
+    },
+    "product_info": {
+        "product": "Revista",
+        "copies": 1000,
+        "pages": 40,
+        "size": "A4",
+        "colors": "4/4",
+        "binding": "stapled",
+        "paper": "Estucado brillo 135g",
+        "paper_size": "1000x700"
+    },
+    "processes": [
+        {
+            "process_type_id": "Impresión",
+            "name": "Impresión Offset",
+            "machine_id": "Prensa B1",
+            "estimated_hours": 4,
+            "priority": 1,
+            "notes": "",
+            "fold_schemes": [
+                {
+                    "fold_catalog": "F16-7",
+                    "total_sheets": 2,
+                    "is_duplex": false
+                },
+                {
+                    "fold_catalog": "F8-7",
+                    "total_sheets": 1,
+                    "is_duplex": false
+                }
+            ]
+        }
+    ]
+}

@@ -40,20 +40,27 @@ const AdminDashboard = () => {
         name: '', description: '', client_user_id: '',
         copies: '', product: '', size: 'A4', colors: '4/4', binding: 'none', paper: '', pages: '', paper_size: '1000x700'
     })
+    const [importedProcesses, setImportedProcesses] = useState([])
     const [inviteData, setInviteData] = useState({ custom_message: '', expiry_hours: 72 })
     const [inviteResult, setInviteResult] = useState(null)
 
     // Menu
     const [anchorEl, setAnchorEl] = useState(null)
+    const [machines, setMachines] = useState([])
+    const [processCatalog, setProcessCatalog] = useState([])
 
     const loadData = useCallback(async () => {
         try {
-            const [projRes, clientRes] = await Promise.all([
+            const [projRes, clientRes, machRes, catRes] = await Promise.all([
                 api.get('/projects'),
-                api.get('/users/clients')
+                api.get('/users/clients'),
+                api.get('/machines?active_only=true'),
+                api.get('/process-catalog?active_only=true'),
             ])
             setProjects(projRes.data)
             setClients(clientRes.data)
+            setMachines(machRes.data)
+            setProcessCatalog(catRes.data)
         } catch (err) {
             setError('Error cargando datos')
         } finally {
@@ -65,7 +72,7 @@ const AdminDashboard = () => {
 
     const handleCreateProject = async () => {
         try {
-            await api.post('/projects', {
+            const res = await api.post('/projects', {
                 name: newProject.name,
                 description: newProject.description,
                 client_user_id: newProject.client_user_id,
@@ -80,12 +87,54 @@ const AdminDashboard = () => {
                     paper_size: newProject.paper_size,
                 }
             })
+            const projectId = res.data?.project?.project_id
+
+            // Auto-create imported processes
+            if (projectId && importedProcesses.length > 0) {
+                let created = 0
+                for (const proc of importedProcesses) {
+                    try {
+                        // Resolve machine by name if not a valid UUID
+                        let machineId = proc.machine_id || null
+                        if (machineId && !machineId.match(/^[0-9a-f-]{36}$/i)) {
+                            const match = machines.find(m => m.name.toLowerCase().includes(machineId.toLowerCase()))
+                            machineId = match?.machine_id || null
+                        }
+                        // Resolve process type by name if not a valid UUID
+                        let processTypeId = proc.process_type_id || ''
+                        if (processTypeId && !processTypeId.match(/^[0-9a-f-]{36}$/i)) {
+                            const match = processCatalog.find(p => p.name.toLowerCase().includes(processTypeId.toLowerCase()))
+                            processTypeId = match?.process_type_id || processTypeId
+                        }
+                        await api.post(`/projects/${projectId}/processes`, {
+                            process_type_id: processTypeId,
+                            name: proc.name || 'Proceso',
+                            machine_id: machineId,
+                            estimated_hours: proc.estimated_hours || 1,
+                            priority: proc.priority || 1,
+                            notes: proc.notes || '',
+                            fold_schemes: proc.fold_schemes || [],
+                        })
+                        created++
+                    } catch (e) {
+                        console.error('Error creando proceso:', e)
+                    }
+                }
+                if (created > 0) {
+                    setSnackbar({ open: true, message: `Proyecto creado con ${created} proceso(s)`, severity: 'success' })
+                } else {
+                    setSnackbar({ open: true, message: 'Proyecto creado (error en procesos)', severity: 'warning' })
+                }
+            } else {
+                setSnackbar({ open: true, message: 'Proyecto creado', severity: 'success' })
+            }
+
             setProjectDialog(false)
             setNewProject({
                 name: '', description: '', client_user_id: '',
-                copies: '', product: '', size: 'A4', colors: '4/4', binding: 'none', paper: '', pages: '', paper_size: 'A4'
+                copies: '', product: '', size: 'A4', colors: '4/4', binding: 'none', paper: '', pages: '', paper_size: '1000x700'
             })
-            setSnackbar({ open: true, message: 'Proyecto creado', severity: 'success' })
+            setImportedProcesses([])
             loadData()
         } catch (err) {
             setSnackbar({ open: true, message: err.response?.data?.detail || 'Error', severity: 'error' })
@@ -138,6 +187,12 @@ const AdminDashboard = () => {
                     paper_size: pi.paper_size || '1000x700',
                 })
                 setSnackbar({ open: true, message: 'JSON importado correctamente', severity: 'success' })
+                // Store processes for auto-creation
+                if (Array.isArray(data.processes) && data.processes.length > 0) {
+                    setImportedProcesses(data.processes)
+                } else {
+                    setImportedProcesses([])
+                }
             } catch (err) {
                 setSnackbar({ open: true, message: 'Error al leer el JSON: formato inválido', severity: 'error' })
             }
