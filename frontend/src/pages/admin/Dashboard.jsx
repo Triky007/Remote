@@ -11,7 +11,7 @@ import {
 import {
     Add, Logout, Person, FolderOpen, Email, ContentCopy,
     CheckCircle, Warning, Error as ErrorIcon, Schedule, Settings,
-    AdminPanelSettings, CalendarViewWeek
+    AdminPanelSettings, CalendarViewWeek, FileUpload
 } from '@mui/icons-material'
 
 const statusColors = {
@@ -38,7 +38,7 @@ const AdminDashboard = () => {
     // Forms
     const [newProject, setNewProject] = useState({
         name: '', description: '', client_user_id: '',
-        copies: '', product: '', size: 'A4', colors: '4/4', binding: 'none', paper: '', pages: '', paper_size: 'A4'
+        copies: '', product: '', size: 'A4', colors: '4/4', binding: 'none', paper: '', pages: '', paper_size: '1000x700'
     })
     const [inviteData, setInviteData] = useState({ custom_message: '', expiry_hours: 72 })
     const [inviteResult, setInviteResult] = useState(null)
@@ -105,6 +105,45 @@ const AdminDashboard = () => {
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text)
         setSnackbar({ open: true, message: 'Copiado al portapapeles', severity: 'info' })
+    }
+
+    const handleImportJson = (event) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result)
+                const pi = data.product_info || {}
+                // Try to match client by company_name
+                let clientId = data.client_user_id || ''
+                if (!clientId && data.client_info?.company_name) {
+                    const match = clients.find(c =>
+                        (c.full_name || '').toLowerCase().includes(data.client_info.company_name.toLowerCase()) ||
+                        (c.username || '').toLowerCase().includes(data.client_info.company_name.toLowerCase())
+                    )
+                    if (match) clientId = match.user_id
+                }
+                setNewProject({
+                    name: data.name || '',
+                    description: data.description || '',
+                    client_user_id: clientId,
+                    product: pi.product || '',
+                    copies: pi.copies || '',
+                    pages: pi.pages || '',
+                    size: pi.size || 'A4',
+                    colors: pi.colors || '4/4',
+                    binding: pi.binding || 'none',
+                    paper: pi.paper || '',
+                    paper_size: pi.paper_size || '1000x700',
+                })
+                setSnackbar({ open: true, message: 'JSON importado correctamente', severity: 'success' })
+            } catch (err) {
+                setSnackbar({ open: true, message: 'Error al leer el JSON: formato inválido', severity: 'error' })
+            }
+        }
+        reader.readAsText(file)
+        event.target.value = '' // reset for re-import
     }
 
     if (loading) {
@@ -236,7 +275,15 @@ const AdminDashboard = () => {
             </Box>
 
             <Dialog open={projectDialog} onClose={() => setProjectDialog(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Nuevo Proyecto</DialogTitle>
+                <DialogTitle>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        Nuevo Proyecto
+                        <Button size="small" variant="outlined" startIcon={<FileUpload />} component="label">
+                            Importar JSON
+                            <input type="file" hidden accept=".json" onChange={handleImportJson} />
+                        </Button>
+                    </Stack>
+                </DialogTitle>
                 <DialogContent>
                     <Stack spacing={2} sx={{ mt: 1 }}>
                         <TextField label="Nombre" value={newProject.name} onChange={(e) => setNewProject({ ...newProject, name: e.target.value })} fullWidth />
@@ -308,14 +355,9 @@ const AdminDashboard = () => {
                                 <InputLabel>Tamaño papel</InputLabel>
                                 <Select value={newProject.paper_size} label="Tamaño papel"
                                     onChange={(e) => setNewProject({ ...newProject, paper_size: e.target.value })}>
-                                    <MenuItem value="A5">A5</MenuItem>
-                                    <MenuItem value="A4">A4</MenuItem>
-                                    <MenuItem value="A3">A3</MenuItem>
-                                    <MenuItem value="SRA3">SRA3</MenuItem>
-                                    <MenuItem value="A2">A2</MenuItem>
-                                    <MenuItem value="SRA2">SRA2</MenuItem>
-                                    <MenuItem value="70x100">70×100</MenuItem>
-                                    <MenuItem value="Personalizado">Personalizado</MenuItem>
+                                    <MenuItem value="1000x700">1000×700</MenuItem>
+                                    <MenuItem value="950x650">950×650</MenuItem>
+                                    <MenuItem value="900x650">900×650</MenuItem>
                                 </Select>
                             </FormControl>
                         </Stack>

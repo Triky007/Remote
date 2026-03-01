@@ -87,7 +87,7 @@ def build_xmf_json(
     trim_w, trim_h = SIZE_MM.get(page_size, SIZE_MM["A4"])
     paper_name = pi.get("paper", "Papel estándar")
     paper_size_name = pi.get("paper_size", "SRA3")
-    paper_w, paper_h = PAPER_SIZE_MM.get(paper_size_name, PAPER_SIZE_MM["SRA3"])
+    paper_w, paper_h = PAPER_SIZE_MM.get(paper_size_name, (1000.0, 700.0))
 
     machine_map = {m["machine_id"]: m for m in machines}
 

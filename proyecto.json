@@ -1,0 +1,19 @@
+{
+    "name": "Catálogo primavera 2024",
+    "description": "Catálogo 40 páginas a color",
+    "client_user_id": "uuid-del-cliente",
+    "client_info": {
+        "company_name": "Empresa S.L.",
+        "email": "cliente@empresa.com"
+    },
+    "product_info": {
+        "product": "Revista",
+        "copies": 1000,
+        "pages": 40,
+        "size": "A4",
+        "colors": "4/4",
+        "binding": "stapled",
+        "paper": "Estucado brillo 135g",
+        "paper_size": "1000x700"
+    }
+}
