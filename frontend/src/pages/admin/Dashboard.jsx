@@ -15,10 +15,10 @@ import {
 } from '@mui/icons-material'
 
 const statusColors = {
-    pending: 'default', reviewing: 'info', approved: 'success', rejected: 'error', completed: 'primary'
+    pending: 'default', reviewing: 'info', client_approved: 'warning', approved: 'success', rejected: 'error', completed: 'primary'
 }
 const statusLabels = {
-    pending: 'Pendiente', reviewing: 'En revisión', approved: 'Aprobado', rejected: 'Rechazado', completed: 'Completado'
+    pending: 'Pendiente', reviewing: 'En revisión', client_approved: 'Aprobado Cliente', approved: 'En producción', rejected: 'Rechazado', completed: 'Completado'
 }
 
 const AdminDashboard = () => {

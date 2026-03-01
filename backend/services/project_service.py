@@ -15,7 +15,7 @@ from config import settings
 class ProjectService:
     """Gestión de proyectos con persistencia JSON"""
 
-    STATUSES = ["pending", "reviewing", "approved", "rejected", "completed"]
+    STATUSES = ["pending", "reviewing", "client_approved", "approved", "rejected", "completed"]
 
     def __init__(self):
         self.data_file = os.path.join(settings.DATA_DIR, "projects.json")

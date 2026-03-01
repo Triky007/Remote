@@ -13,14 +13,14 @@ import {
 import {
     ArrowBack, Upload, Search, Delete, Comment, Send, Description,
     CheckCircle, Warning, Error as ErrorIcon, Schedule, Add,
-    PlayArrow, Stop, PrecisionManufacturing, CalendarMonth
+    PlayArrow, Stop, PrecisionManufacturing, CalendarMonth, Gavel
 } from '@mui/icons-material'
 
 const statusColors = {
-    pending: 'default', reviewing: 'info', approved: 'success', rejected: 'error', completed: 'primary'
+    pending: 'default', reviewing: 'info', client_approved: 'warning', approved: 'success', rejected: 'error', completed: 'primary'
 }
 const statusLabels = {
-    pending: 'Pendiente', reviewing: 'En revisión', approved: 'Aprobado', rejected: 'Rechazado', completed: 'Completado'
+    pending: 'Pendiente', reviewing: 'En revisión', client_approved: 'Aprobado por Cliente', approved: 'Aprobado Producción', rejected: 'Rechazado', completed: 'Completado'
 }
 const preflightStatusIcons = {
     PASS: <CheckCircle sx={{ color: '#10b981' }} />,
@@ -233,7 +233,28 @@ const AdminProjectDetail = () => {
                             variant="outlined" color="warning" sx={{ fontWeight: 600 }}
                         />
                     )}
+                    {project.status === 'client_approved' && (
+                        <Button variant="contained" color="success" startIcon={<Gavel />}
+                            onClick={async () => {
+                                try {
+                                    await api.put(`/projects/${projectId}/status`, { status: 'approved' })
+                                    setSnackbar({ open: true, message: 'Proyecto aprobado para producción y planificado', severity: 'success' })
+                                    loadProject()
+                                } catch (err) {
+                                    setSnackbar({ open: true, message: 'Error', severity: 'error' })
+                                }
+                            }}
+                            sx={{ fontWeight: 700, px: 3 }}>
+                            Aprobar Producción
+                        </Button>
+                    )}
                 </Stack>
+
+                {project.status === 'client_approved' && (
+                    <Alert severity="info" sx={{ mb: 2 }} icon={<Gavel />}>
+                        <strong>El cliente ha aprobado este proyecto.</strong> Pulse "Aprobar Producción" para iniciar la planificación automática.
+                    </Alert>
+                )}
 
                 {/* ═══ Processes Section ═══ */}
                 <Card sx={{ mb: 2 }}>

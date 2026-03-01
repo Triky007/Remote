@@ -132,6 +132,33 @@ async def update_project_status(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.put("/{project_id}/client-approve")
+async def client_approve_project(
+    project_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """El cliente aprueba el proyecto. Solo el cliente asignado puede hacerlo."""
+    project = project_service.get_project_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    # Solo el cliente asignado puede aprobar
+    if current_user["role"] != "client" and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Sin permisos")
+    if current_user["role"] == "client" and project.get("client_user_id") != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="No tiene acceso a este proyecto")
+
+    # Solo se puede aprobar desde pending o reviewing
+    if project.get("status") not in ("pending", "reviewing"):
+        raise HTTPException(status_code=400, detail="Solo se puede aprobar un proyecto pendiente o en revisión")
+
+    updated = project_service.update_status(project_id, "client_approved")
+    if not updated:
+        raise HTTPException(status_code=500, detail="Error actualizando estado")
+
+    return {"success": True, "project": updated, "message": "Proyecto aprobado por el cliente"}
+
+
 @router.delete("/{project_id}")
 async def delete_project(project_id: str, current_user: dict = Depends(get_current_admin)):
     """Elimina un proyecto (solo admin)"""

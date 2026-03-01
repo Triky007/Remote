@@ -10,7 +10,7 @@ import {
 } from '@mui/material'
 import {
     ArrowBack, Upload, Search, Description, Send,
-    CheckCircle, Warning, Error as ErrorIcon, Schedule
+    CheckCircle, Warning, Error as ErrorIcon, Schedule, ThumbUp
 } from '@mui/icons-material'
 
 const preflightStatusIcons = {
@@ -20,10 +20,10 @@ const preflightStatusIcons = {
     pending: <Schedule sx={{ color: '#9ca3af' }} />,
 }
 const statusLabels = {
-    pending: 'Pendiente', reviewing: 'En revisión', approved: 'Aprobado', rejected: 'Rechazado', completed: 'Completado'
+    pending: 'Pendiente', reviewing: 'En revisión', client_approved: 'Aprobado por usted', approved: 'En producción', rejected: 'Rechazado', completed: 'Completado'
 }
 const statusColors = {
-    pending: 'default', reviewing: 'info', approved: 'success', rejected: 'error', completed: 'primary'
+    pending: 'default', reviewing: 'info', client_approved: 'warning', approved: 'success', rejected: 'error', completed: 'primary'
 }
 
 const ClientProjectDetail = () => {
@@ -100,6 +100,16 @@ const ClientProjectDetail = () => {
         }
     }
 
+    const handleClientApprove = async () => {
+        try {
+            await api.put(`/projects/${projectId}/client-approve`)
+            setSnackbar({ open: true, message: '¡Proyecto aprobado! El administrador será notificado.', severity: 'success' })
+            loadProject()
+        } catch (err) {
+            setSnackbar({ open: true, message: err.response?.data?.detail || 'Error al aprobar', severity: 'error' })
+        }
+    }
+
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>
 
     if (!project) return (
@@ -119,6 +129,12 @@ const ClientProjectDetail = () => {
                         <Typography variant="body2" color="text.secondary">{project.description}</Typography>
                     </Box>
                     <Chip label={statusLabels[project.status] || project.status} color={statusColors[project.status] || 'default'} sx={{ fontWeight: 600 }} />
+                    {(project.status === 'pending' || project.status === 'reviewing') && (
+                        <Button variant="contained" color="success" startIcon={<ThumbUp />}
+                            onClick={handleClientApprove} sx={{ fontWeight: 600 }}>
+                            Aprobar Proyecto
+                        </Button>
+                    )}
                 </Stack>
 
                 <Grid container spacing={2}>
